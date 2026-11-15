@@ -1,0 +1,27 @@
+# ESCOLA HARPA — guia para o Claude (leia antes de mexer)
+
+App web de estudos de música (no molde do app Firmes, `contatojampro5-dot/escola-apologia-`). Dono: Theo (GitHub
+`contatojampro5-dot`), chama o assistente de **"Zeus"**. Responda sempre em português, simples e direto. Theo é iniciante
+em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responder, decida e avise depois o que decidiu.
+
+## Como o projeto é montado
+- HTML + CSS + JS puro, sem build. GitHub Pages (`main`, raiz, `.nojekyll`): https://contatojampro5-dot.github.io/escola-musica-/
+- Mesma página publicada como artifact no Claude: https://claude.ai/artifact/BDtSj1bsoUFdRaLXXz8Gf6 (atualizar junto).
+- Ordem dos scripts (index.html): teoria → audio → art → base → extras → licoes1..3 → app → ui2 (ui2 inicia o app).
+- `js/teoria.js` notas com grafia certa (`T.parse/up/build`, `SCALES`, `CHORDS`, `campo()`); `js/audio.js` som Web Audio
+  (`AU`, mini linguagem `playSpec("C4 [C4 E4 G4]:2 bpm=80")`, efeitos `fx:...`, `MIX` mesa, `METRO`).
+- `js/art.js` motor de desenho `personS` trazido do Firmes + 7 mestres (`ARTMAP`, `mArt(id, fase)`).
+- `js/base.js` mestres, `TRACKS` (7 níveis × 4 lições), `CARDS`, `GUIA()`; `js/extras.js` figurinhas `FIGS`, frases, teste `VOC`.
+- `js/licoes*.js` conteúdo: tipos de slide em `slideHTML` (app.js): mentor, txt, list, table, big, quote, tf, pick, ear,
+  order, match, play, kb, rhythm, tap, chat, staff. Prova em `q`.
+- `js/app.js` motor (stories, prova, academia de ouvido `EAR`, cards, laboratório, perfil, rotas); `js/ui2.js` telas no
+  padrão Firmes (boas-vindas, início, trilha em caminho, mestres, álbum, teste).
+- Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
+
+## Testar
+- `node --check js/*.js`; navegador com Playwright (Chromium já instalado) servindo a pasta com `python3 -m http.server`,
+  percorrendo todas as lições, provas, níveis de ouvido e laboratório; procurar `pageerror`.
+
+## Regras
+- Toda atualização: commit + push em `main`, mensagem curta em português começando pela versão (ex.: `v2.1: ...`),
+  e uma linha em "Versões" no `README.md`. Atualizar também o artifact.
