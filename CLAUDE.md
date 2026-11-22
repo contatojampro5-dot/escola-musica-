@@ -7,7 +7,7 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
 ## Como o projeto é montado
 - HTML + CSS + JS puro, sem build. GitHub Pages (`main`, raiz, `.nojekyll`): https://contatojampro5-dot.github.io/escola-musica-/
 - Mesma página publicada como artifact no Claude: https://claude.ai/artifact/BDtSj1bsoUFdRaLXXz8Gf6 (atualizar junto).
-- Ordem dos scripts (index.html): teoria → audio → art → base → extras → licoes1..3 → app → ui2 (ui2 inicia o app).
+- Ordem dos scripts (index.html): teoria → audio → art → base → extras → licoes1..3 → app → piano → ui2 (ui2 inicia o app).
 - `js/teoria.js` notas com grafia certa (`T.parse/up/build`, `SCALES`, `CHORDS`, `campo()`); `js/audio.js` som Web Audio
   (`AU`, mini linguagem `playSpec("C4 [C4 E4 G4]:2 bpm=80")`, efeitos `fx:...`, `MIX` mesa, `METRO`).
 - `js/art.js` motor de desenho `personS` trazido do Firmes + 7 mestres (`ARTMAP`, `mArt(id, fase)`).
@@ -16,6 +16,10 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   order, match, play, kb, rhythm, tap, chat, staff. Prova em `q`.
 - `js/app.js` motor (stories, prova, academia de ouvido `EAR`, cards, laboratório, perfil, rotas); `js/ui2.js` telas no
   padrão Firmes (boas-vindas, início, trilha em caminho, mestres, álbum, teste).
+- `js/piano.js` aba Piano (v2.1): notas caindo no canvas (`PZ`, modos esperar/tocar junto/assistir), entrada `INP`
+  (Web MIDI para o teclado USB, toque, microfone `MIC` com YIN), músicas prontas `SONGS` (domínio público, `mkSong`),
+  leitor de MIDI `parseMidi`, partitura com VexFlow 4.2.2 do jsdelivr (carregado só ao abrir), `transcribeBuffer`
+  (melodia de áudio/vídeo, uma nota por vez) e treino de leitura (`#piano-leitura`). Minhas músicas em localStorage `harpa.songs`.
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
 ## Testar

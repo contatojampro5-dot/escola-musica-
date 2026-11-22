@@ -43,6 +43,7 @@ const IC = {
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
   path: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/></svg>',
   ear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 3-2 4-3 5.5S14 18 12 20a3 3 0 0 1-5-2"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-1.5 2-1.5 3.5"/></svg>',
+  piano: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 4v10M12 4v10M17 4v10M7 14v6M12 14v6M17 14v6"/><path d="M5.5 4v7h3V4M15.5 4v7h3V4" fill="currentColor"/></svg>',
   lab: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V14M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>',
   cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="15" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
@@ -61,7 +62,7 @@ const btnPlay = (attr, label) => `<button class="pbtn" ${attr}><span class="pi">
 function hdr() { const h = $("#hdrStats"); if (h) h.innerHTML = `<span class="flame">${IC.flame}</span><b>${streak()}</b>d <span>·</span> <b>${S.xp}</b> XP`; }
 function tabs(cur) {
   const due = dueCards().length;
-  const items = [["inicio", "Início", IC.home], ["trilha", "Trilha", IC.path], ["ouvido", "Ouvido", IC.ear], ["lab", "Lab", IC.lab], ["cards", "Cards", IC.cards]];
+  const items = [["inicio", "Início", IC.home], ["trilha", "Trilha", IC.path], ["piano", "Piano", IC.piano], ["ouvido", "Ouvido", IC.ear], ["lab", "Lab", IC.lab], ["cards", "Cards", IC.cards]];
   $("#tabs").innerHTML = `<div class="tabs-in">${items.map(([h, n, ic]) => `<a class="tab" href="#${h}" ${cur === h ? 'aria-current="page"' : ""}>${ic}${n}${h === "cards" && due ? `<span class="dot">${due}</span>` : ""}</a>`).join("")}</div>`;
   $("#tabs").hidden = false;
 }
@@ -731,6 +732,7 @@ function route() {
   if (window._labStop) { window._labStop(); window._labStop = null; }
   MIX.stop(); METRO.stop();
   if (!h.startsWith("s-")) closeStory();
+  if (!h.startsWith("piano")) { if (typeof MIC !== "undefined" && MIC.on) MIC.stop(); if (typeof PZ !== "undefined") { PZ.playing = false; } window.onresize = null; }
   const [a, ...r] = h.split("-"), rest = r.join("-");
   window.scrollTo(0, 0);
   if (a === "s") { openStory(rest); return; }
@@ -738,6 +740,7 @@ function route() {
   if (a === "l") { tabs("trilha"); viewLesson(rest); return; }
   if (a === "o") { tabs("ouvido"); openEar(rest); return; }
   if (a === "lab") { tabs("lab"); viewLab(rest); return; }
+  if (a === "piano") { tabs("piano"); viewPiano(rest); return; }
   if (a === "mentor") { tabs(""); viewMentor(rest); return; }
   const V = { inicio: viewHome, trilha: viewTrilha, ouvido: viewOuvido, cards: () => { CQ = null; viewCards(); }, perfil: viewPerfil, guia: viewGuia, mentores: viewMentores, album: viewAlbum, teste: () => { VT = null; viewTeste(); } };
   tabs(V[a] ? (["perfil", "guia", "mentores", "album", "teste"].includes(a) ? "" : a) : "inicio");
