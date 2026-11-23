@@ -50,6 +50,69 @@ const STYLES = {
 };
 const STYLE_KEYS = ["balada", "gospel", "groove"]; // estilos mostrados (decisão do Theo: focar nesses três)
 
+// ---------- frases ("licks") que o tecladista faz em cima dos acordes ----------
+// cada nota: [início em tempos, duração, semitons acima da fundamental do acorde (número ou [dupla]), força]
+const T3 = 1 / 3, T6 = 1 / 6;
+const LICKS = {
+  gospel: {
+    maior: [
+      { n: "descida com nota esmagada", len: 3, ns: [[0, T6, 15, .5], [T6, .5, 16, .72], [2 * T3, T3, 14, .55], [1, T3, 12, .6], [4 * T3, T3, 9, .55], [5 * T3, T3, 7, .5], [2, 1, 4, .6]] },
+      { n: "subida gospel", len: 3, ns: [[0, T3, 7, .5], [T3, T3, 9, .55], [2 * T3, T3, 12, .6], [1, T3, 14, .62], [4 * T3, T6, 15, .5], [1.5, 1.5, 16, .72]] },
+      { n: "terças deslizando", len: 2, ns: [[0, T6, [3, 8], .45], [T6, .5, [4, 9], .66], [2 * T3, T3, [2, 7], .52], [1, 1, [0, 4], .6]] },
+      { n: "6-5-3-2-1 com blue note", len: 3, ns: [[0, T3, 21, .6], [T3, T3, 19, .55], [2 * T3, T6, 15, .45], [5 * T6, .5, 16, .62], [4 * T3, T3, 14, .5], [5 * T3, 4 * T3, 12, .66]] },
+      { n: "trinado curto", len: 2, ns: [[0, T6, 16, .55], [T6, T6, 17, .5], [T3, T6, 16, .5], [.5, T6, 14, .5], [2 * T3, 4 * T3, 12, .62]] }
+    ],
+    menor: [
+      { n: "pentatônica menor descendo", len: 3, ns: [[0, T3, 19, .6], [T3, T3, 17, .55], [2 * T3, T3, 15, .55], [1, T3, 12, .6], [4 * T3, T3, 10, .5], [5 * T3, 4 * T3, 12, .62]] },
+      { n: "resposta curta", len: 2, ns: [[0, T6, 14, .5], [T6, .5, 15, .66], [2 * T3, T3, 12, .55], [1, 1, 10, .55]] }
+    ]
+  },
+  groove: {
+    maior: [
+      { n: "9ª, 3ª e 5ª em semicolcheias", len: 2, ns: [[0, .25, 14, .55], [.25, .25, 16, .5], [.5, .5, 19, .66], [1, .25, 23, .5], [1.25, .75, 21, .6]] },
+      { n: "deslize para a 9ª", len: 3, ns: [[0, .12, 13, .4], [.12, .38, 14, .66], [.5, .25, 12, .5], [.75, .25, 7, .45], [1, .5, 9, .58], [1.75, .25, 11, .5], [2, 1, 14, .64]] },
+      { n: "dupla sincopada", len: 2, ns: [[0, .25, [7, 14], .55], [.75, .25, [9, 16], .6], [1.5, .5, [11, 16], .62]] }
+    ],
+    menor: [
+      { n: "pentatônica menor sincopada", len: 3, ns: [[0, .25, 10, .5], [.25, .25, 12, .52], [.5, .25, 15, .58], [.75, .25, 17, .52], [1, .5, 19, .66], [1.75, .25, 17, .48], [2, 1, 15, .6]] },
+      { n: "deslize e resposta", len: 3, ns: [[0, .12, 16, .4], [.12, .38, 15, .62], [.5, .25, 12, .5], [.75, .75, 10, .56], [1.75, .25, 7, .45], [2, .75, 10, .58]] }
+    ],
+    dom: [
+      { n: "blues no dominante", len: 3, ns: [[0, .12, 15, .42], [.12, .38, 16, .64], [.5, .25, 14, .5], [.75, .25, 10, .52], [1, .5, 7, .55], [1.5, .5, 9, .52], [2, 1, 10, .6]] }
+    ]
+  }
+};
+// coloca as frases nos buracos da melodia (ou numa linha improvisada, se não houver melodia)
+function addFills(out, parts, mel, style, num, R) {
+  const L = LICKS[style]; if (!L) return;
+  const partAt = t => parts.find(p => t >= p.t - .01 && t < p.t1 - .01);
+  const busy = (a, b) => mel.some(n => n.t < b - .05 && n.t + n.d > a + .05);
+  const wins = [];
+  if (mel.length) {
+    const ms = mel.slice().sort((a, b) => a.t - b.t); let cur = 0;
+    ms.forEach(n => { if (n.t - cur >= 1.25) wins.push([cur, n.t, false]); if (n.d >= 2.5 && !ms.some(o => o !== n && o.t > n.t + .1 && o.t < n.t + n.d - .05)) wins.push([n.t + 1, n.t + n.d, Math.min(...ms.filter(o => o.t <= n.t + .05 && o.t + o.d > n.t + 1).map(o => o.m))]); cur = Math.max(cur, n.t + n.d); });
+    const end = parts.length ? parts[parts.length - 1].t1 : cur; if (end - cur >= 1.25) wins.push([cur, end, false]);
+  } else {
+    // linha improvisada: pergunta no 1º compasso, resposta no 2º, a cada 2 compassos
+    const end = parts.length ? parts[parts.length - 1].t1 : 0;
+    for (let b = 0; b * num < end - num; b += 2) { wins.push([b * num + .5, (b + 1) * num, false]); wins.push([(b + 1) * num + 1, (b + 2) * num, false]); }
+  }
+  let lastEnd = -9;
+  wins.forEach(([a, b, held]) => {
+    if (a - lastEnd < (mel.length ? 3 : 0)) return; // não encher demais
+    const p = partAt(a); if (!p) return;
+    const kind = p.c.minor ? "menor" : (p.dom && L.dom ? "dom" : "maior"), pool = (L[kind] || L.maior).filter(l => l.len <= Math.min(b, p.t1 + (mel.length ? 0 : 1)) - a + .01);
+    if (!pool.length) return;
+    const lk = pool[Math.floor(R() * pool.length)];
+    const ofs = lk.ns.flatMap(x => [].concat(x[2])); let base = 60 + p.c.root; // oitava: acima dos acordes, abaixo de Ré6
+    while (base + Math.max(...ofs) > 88) base -= 12; while (base + Math.min(...ofs) < 64) base += 12;
+    if (held) while (base + Math.max(...ofs) >= held - 1 && base - 12 + Math.min(...ofs) >= 55) base -= 12; // por baixo da nota segurada
+    if (held && base + Math.max(...ofs) >= held) return; // não cabe por baixo: deixa a melodia sozinha
+    lk.ns.forEach(([t, d, o, v]) => [].concat(o).forEach(oo => { const tt = a + t; if (tt + d > b + .01) return; if (!held && busy(tt, tt + d)) return; out.push({ t: +tt.toFixed(3), d: +d.toFixed(3), m: base + oo, h: "F", v: Math.min(.9, (v || .6) + (R() - .5) * .06), sw: style === "groove" ? .02 : 0, j: (R() - .5) * .012, lick: lk.n }); }));
+    lastEnd = a + lk.len;
+  });
+}
+
 // gerador "humano": pedal, dinâmica, balanço, antecipações, viradas no fim das frases
 function rngOf(seed) { let a = 0; for (const ch of String(seed)) a = (a * 31 + ch.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function styledSong(base, style) {
@@ -151,6 +214,7 @@ function styledSong(base, style) {
       }
     }
   });
+  if (style === "gospel" || style === "groove") addFills(out, parts, mel, style, num, R);
   out.sort((a, b) => a.t - b.t || a.m - b.m);
   return Object.assign({}, base, { id: base.id + "~" + style, title: base.title + " · " + STYLES[style].n, notes: out, base, style, _ch: names.sort((a, b) => a.t - b.t), bpm: base.id === "demo" ? STYLES[style].bpm : base.bpm });
 }

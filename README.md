@@ -23,6 +23,7 @@ Progresso salvo no aparelho (localStorage). `sw.js` deixa abrir sem internet dep
 `index.html` · `css/app.css` · `js/teoria.js` (teoria com grafia certa) · `js/audio.js` (motor de som Web Audio) · `js/art.js` (desenho dos mestres) · `js/base.js` (mestres, níveis, cards, guia) · `js/extras.js` (figurinhas, frases, teste) · `js/ui2.js` (telas no padrão Firmes) · `js/licoes1-3.js` (conteúdo) · `js/app.js` (telas).
 
 ## Versões
+- **v3.3**: frases (licks) no gospel e no groove: o app "brinca" nos buracos da melodia e nas notas longas (nota esmagada, descidas em tercina, terças deslizando, deslize para a 9ª, pentatônica sincopada, blues no dominante); na demonstração faz uma linha improvisada de pergunta e resposta. Frases em dourado nas notas caindo.
 - **v3.2**: estilos reduzidos a Original, Balada/Louvor, Gospel americano e Groove (pedido do Theo); gospel com I7 antes do IV e IV/V antes do V.
 - **v3.1**: estilos com pegada humana: dinâmica (acentos e notas fantasma), pedal, swing no gospel, antecipações, viradas no fim das frases, bossa com polegar alternado, hino com vozes seguindo a melodia, micro-variações de tempo e piano mais brilhante quando tocado forte.
 - **v3.0**: estilos de toque: o app gera o acompanhamento de qualquer música em Balada/Louvor, Gospel americano, Groove (R&B), Bossa nova, Baião, Hino tradicional e Arpejo, com cifras enriquecidas; tela "Estilos de toque" explica e toca cada estilo em I–V–vi–IV.

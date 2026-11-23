@@ -218,8 +218,8 @@ async function transcribePoly(ab, onProg) {
 
 // ---------- player de notas caindo ----------
 const PZ = { song: null, pos: 0, playing: false, speed: 1, hand: "R", mode: "wait", metro: false, raf: 0, last: 0, groups: [], gi: 0, waiting: false, hits: 0, miss: 0, zoom: 1, flash: {} };
-const HC = { R: ["#FF8A3D", "#FFB27A"], L: ["#8C6CFF", "#B9A6FF"] };
-function userHand(n) { return PZ.mode !== "watch" && (PZ.hand === "both" || PZ.hand === n.h); }
+const HC = { R: ["#FF8A3D", "#FFB27A"], L: ["#8C6CFF", "#B9A6FF"], F: ["#F2C14E", "#F7D98A"] };
+function userHand(n) { return PZ.mode !== "watch" && n.h !== "F" && (PZ.hand === "both" || PZ.hand === n.h); } // F = frases/enfeites: sempre automáticas
 function pzLoad(song) {
   PZ.song = song; PZ.playing = false; cancelAnimationFrame(PZ.raf);
   const ns = song.notes; let lo = Math.min(...ns.map(n => n.m)), hi = Math.max(...ns.map(n => n.m));
@@ -403,7 +403,7 @@ async function renderScore(el, o = {}) {
   const VF = Vex.Flow, flat = !SHARP_KEYS.includes(s.key) && s.key !== "C" && s.key !== "Am";
   PZ.flat = flat;
   const qPerBeat = 4 / s.den, barQ = s.num * qPerBeat, nBars = Math.ceil(PZ.end / s.num);
-  const chords = o.noChords ? [] : songChords(s), hasR = s.notes.some(n => n.h === "R");
+  const chords = o.noChords ? [] : songChords(s), hasR = s.notes.some(n => n.h === "R" || n.h === "F");
   const hasL = s.notes.some(n => n.h === "L"), shown = Math.min(nBars, o.maxBars || nBars);
   const W = Math.max(280, el.clientWidth - 8), sc = o.scale || (W < 600 ? .62 : .8), LW = W / sc;
   const per = Math.max(1, Math.min(4, Math.floor((LW - 20) / 250))), mw = (LW - 20) / per, sysH = hasL && hasR ? 250 : 150, rows = Math.ceil(shown / per);
@@ -420,7 +420,7 @@ async function renderScore(el, o = {}) {
     const voices = [], ties = [], beams = [];
     for (const [h, stave, clef] of [["R", st, "treble"], ["L", sb, "bass"]]) {
       if ((h === "L" && !hasL) || (h === "R" && !hasR)) continue;
-      const b0 = b * s.num, b1 = b0 + s.num, ns = s.notes.filter(n => n.h === h && n.t >= b0 - .001 && n.t < b1 - .001);
+      const b0 = b * s.num, b1 = b0 + s.num, ns = s.notes.filter(n => (n.h === h || (h === "R" && n.h === "F")) && n.t >= b0 - .001 && n.t < b1 - .001);
       const on = [...new Set(ns.map(n => +n.t.toFixed(3)))].sort((a, c) => a - c), tick = [], tt = [];
       let tcur = b0;
       let cur = b0;
@@ -594,7 +594,7 @@ function viewTocar() {
     <div id="pzHud" class="pzhud"></div>
     <canvas id="pzc" class="pzc" aria-label="Notas caindo sobre o teclado"></canvas>
     <input type="range" id="pzSeek" class="range" min="0" step=".25" value="0">
-    <p class="small muted">Laranja = mão direita · roxo = mão esquerda · verde = acertou. Toque no teclado da tela para tocar.</p>
+    <p class="small muted">Laranja = mão direita · roxo = mão esquerda · dourado = frases do estilo · verde = acertou. Toque no teclado da tela para tocar.</p>
   </section>`;
   const sel = id => $("#" + id);
   if (![.5, .75, 1, 1.25].includes(PZ.speed)) PZ.speed = 1;
