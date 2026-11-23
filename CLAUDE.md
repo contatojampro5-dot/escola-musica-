@@ -31,6 +31,9 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   (vozes de cima = mão direita, de baixo = esquerda; até ~24–40 compassos) + Para Elisa e Minueto escritos à mão. Campo `cat`
   (hino | classica | comecar) agrupa a biblioteca. v2.9: hinos só-melodia transcritos à mão do LilyPond da Wikipédia
   (não rodar o LilyPond em arquivo baixado: pode executar código) + `withAutoBass` (baixo por compasso pelas cifras). Só domínio público; letras/arranjos da Harpa Cristã são da CPAD (não usar).
+- `js/estilos.js` (v3.0): `STYLES` + `styledSong(base, estilo)` gera baixo + acordes a partir de `songChords` (cifra enriquecida por
+  `colorChord`, montagem `voiceNear`, padrão rítmico por estilo; gospel com walk-up cromático e deslize de meio tom). Tela `#piano-estilos`,
+  escolha na tela Tocar (`PZ.style`), progressão de demonstração `DEMO`.
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
 ## Testar

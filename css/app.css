@@ -570,3 +570,9 @@ body.scopen .tabs,body.scopen .top{display:none}
 .pzopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pzopts .sel{min-width:0;width:100%;font-size:.8rem;padding:8px 4px}
 @media (min-width:700px){.ptiles{grid-template-columns:repeat(3,1fr)}}
+/* ===== v3.0: estilos de toque ===== */
+.stylerow{flex-wrap:nowrap}
+.stylerow .sel{min-width:0}
+details.como{background:var(--fill);border-radius:var(--r-md);padding:10px 12px}
+details.como summary{cursor:pointer;font-weight:650;color:var(--accent)}
+details.como ul{margin-top:8px}

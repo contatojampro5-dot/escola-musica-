@@ -486,11 +486,11 @@ function subHead(t, sub) { return `<a class="back" href="#piano">${IC.back} Pian
 function songPick(cur) { return `<a class="card songpick" href="#piano-musicas"><span class="spic">♪</span><span class="grow"><b>${esc(cur.title)}</b><small>Tom: ${esc(songKey(cur))} · toque para trocar de música</small></span><span class="spgo">›</span></a>`; }
 function viewPiano(sub) {
   const [k, q] = (sub || "").split("?yt="), yt = q ? decodeURIComponent(q) : null;
-  const R = { tocar: viewTocar, musicas: viewMusicas, partitura: viewPartitura, youtube: () => viewYoutube(yt), tirar: () => viewYoutube(yt), arquivo: viewArquivo, gravar: viewGravar, teclado: viewTeclado, leitura: viewLeitura };
+  const R = { tocar: viewTocar, musicas: viewMusicas, partitura: viewPartitura, youtube: () => viewYoutube(yt), tirar: () => viewYoutube(yt), arquivo: viewArquivo, gravar: viewGravar, teclado: viewTeclado, leitura: viewLeitura, estilos: viewEstilos };
   (R[k] || pianoHub)();
 }
 const PTILES = [
-  ["Praticar", [["tocar", "🎹", "Tocar", "Notas caindo no teclado. A música espera você acertar.", "#FF8A3D", "#FFC145"], ["leitura", "𝄞", "Treino de leitura", "Leia a nota na pauta e toque.", "#2B8A3E", "#8CE99A"]]],
+  ["Praticar", [["tocar", "🎹", "Tocar", "Notas caindo no teclado. A música espera você acertar.", "#FF8A3D", "#FFC145"], ["estilos", "🙌", "Estilos de toque", "Gospel, groove, bossa, baião, balada…", "#E8590C", "#FFA94D"], ["leitura", "𝄞", "Treino de leitura", "Leia a nota na pauta e toque.", "#2B8A3E", "#8CE99A"]]],
   ["Partituras", [["musicas", "📚", "Minhas músicas", "Biblioteca: tocar ou ver a partitura.", "#6D3FE0", "#B794FF"], ["youtube", "▶", "Do YouTube", "Cole o link: identifica a música e tira a partitura.", "#E03131", "#FF8787"], ["arquivo", "⬆", "Subir áudio ou vídeo", "A IA escreve a partitura com cifras.", "#1C7ED6", "#74C0FC"], ["gravar", "🎤", "Gravar", "Cante ou toque perto do celular.", "#C2255C", "#F783AC"]]],
   ["Configurar", [["teclado", "🔌", "Meu teclado", "Conectar teclado USB ou microfone.", "#495057", "#ADB5BD"]]]
 ];
@@ -510,7 +510,7 @@ function viewMusicas() {
   <h2 class="sec">Tiradas por você</h2>
   ${mine.length ? `<div class="stack">${mine.map(s => card(s, true)).join("")}</div>` : `<p class="small muted">Ainda nenhuma. Tire a partitura de um vídeo do YouTube, de um áudio ou de uma gravação.</p>`}
   ${[["hino", "Hinos"], ["classica", "Música clássica"], ["comecar", "Para começar"]].map(([c, t]) => `<h2 class="sec">${t}</h2><div class="stack">${SONGS.filter(x => (x.cat || "comecar") === c).map(x => card(x, false)).join("")}</div>`).join("")}`;
-  const use = id => { const s = findSong(id); if (s) { PZ.song = s; pzLoad(s); } return s; };
+  const use = id => { let s = findSong(id); if (s && PZ.style) s = styledSong(s, PZ.style); if (s) { PZ.song = s; pzLoad(s); } return s; };
   app().querySelectorAll("[data-play]").forEach(b => b.onclick = () => { if (use(b.dataset.play)) location.hash = "#piano-tocar"; });
   app().querySelectorAll("[data-score]").forEach(b => b.onclick = () => { if (use(b.dataset.score)) location.hash = "#piano-partitura"; });
   app().querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (!confirm("Apagar esta música?")) return; saveMySongs(mySongs().filter(s => s.id !== b.dataset.del)); if (PZ.song && PZ.song.id === b.dataset.del) { PZ.song = SONGS[0]; pzLoad(PZ.song); } viewMusicas(); });
@@ -579,6 +579,7 @@ function viewTocar() {
   ${songPick(cur)}
   <section class="card stack pzcard">
     <div class="pzbtns"><button class="btn pri" id="pzPlay">${IC.play} Tocar</button><button class="btn" id="pzRe">Recomeçar</button><button class="btn" id="pzSv">Partitura</button></div>
+    <div class="row stylerow"><label class="small" for="pzSty"><b>Estilo</b></label><select id="pzSty" class="sel grow"><option value="">Original</option>${STYLE_KEYS.map(k => `<option value="${k}">${STYLES[k].ic} ${STYLES[k].n}</option>`).join("")}</select><a class="small" href="#piano-estilos">O que é?</a></div>
     <div class="pzopts"><select id="pzMode" class="sel"><option value="wait">Esperar</option><option value="play">Tocar junto</option><option value="watch">Assistir</option></select>
       <select id="pzHand" class="sel"><option value="R">Mão direita</option><option value="L">Mão esquerda</option><option value="both">2 mãos</option></select>
       <select id="pzSpd" class="sel"><option value=".5">50%</option><option value=".75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option></select>
@@ -594,6 +595,8 @@ function viewTocar() {
   sel("pzMode").value = PZ.mode; sel("pzHand").value = PZ.hand; sel("pzSpd").value = String(PZ.speed); sel("pzMet").checked = PZ.metro;
   if (PZ.song !== cur || !PZ.end) pzLoad(cur);
   PZ.song = cur; sel("pzSeek").max = PZ.end; pzDraw(); pzHud();
+  sel("pzSty").value = cur.style || "";
+  sel("pzSty").onchange = e => { const base = cur.base || cur; PZ.style = e.target.value; PZ.playing = false; PZ.song = PZ.style ? styledSong(base, PZ.style) : base; pzLoad(PZ.song); viewTocar(); };
   sel("pzPlay").onclick = pzPlay;
   sel("pzRe").onclick = () => { PZ.playing = false; pzLoad(PZ.song); };
   sel("pzSv").onclick = openScoreViewer;
