@@ -23,6 +23,8 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   v2.2: sub-rotas `#piano` (tocar), `#piano-partitura` (prévia 8 compassos + `openScoreViewer` tela cheia), `#piano-tirar`
   (YouTube via oEmbed `ytIdentify` + gravação do som da aba `getDisplayMedia`/microfone `recordAudio`; arquivo → `trRun`),
   `#piano-leitura`. IA polifônica: Basic Pitch 1.0.1 por `import(jsdelivr/+esm)` (`transcribePoly`), saída em `notesToSong`. Minhas músicas em localStorage `harpa.songs`.
+  v2.7: `#piano` = central `pianoHub` (atalhos `PTILES`); telas `#piano-tocar|musicas|partitura|youtube|arquivo|gravar|teclado|leitura`
+  (roteador `viewPiano`, `#piano-tirar` antigo vai para youtube); escolha IA/melodia em `TR_MODE` (`modeSeg`).
   v2.5: cifras automáticas `songChords(s)` (janela de meio compasso, peso no baixo, acordes do tom primeiro), desenhadas
   como `VF.Annotation` na pauta de cima e na lateral do canvas.
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).

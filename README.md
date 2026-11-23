@@ -23,6 +23,7 @@ Progresso salvo no aparelho (localStorage). `sw.js` deixa abrir sem internet dep
 `index.html` · `css/app.css` · `js/teoria.js` (teoria com grafia certa) · `js/audio.js` (motor de som Web Audio) · `js/art.js` (desenho dos mestres) · `js/base.js` (mestres, níveis, cards, guia) · `js/extras.js` (figurinhas, frases, teste) · `js/ui2.js` (telas no padrão Firmes) · `js/licoes1-3.js` (conteúdo) · `js/app.js` (telas).
 
 ## Versões
+- **v2.7**: aba Piano virou uma central com atalhos (Tocar, Treino de leitura, Minhas músicas, Do YouTube, Subir áudio/vídeo, Gravar, Meu teclado), cada um na sua tela, e cartão "Continuar".
 - **v2.6**: tom da música escrito na tela da partitura (e na tela cheia); melodia grave vai para a clave de fá; menos ruído nas gravações de microfone; cifras mais musicais quando só há melodia (I, IV, V e tempos fortes).
 - **v2.5**: cifras (acordes) em cima da partitura e ao lado das notas caindo, descobertas automaticamente pelas notas (músicas prontas, MIDI e as tiradas pela IA).
 - **v2.4**: som no iPhone mesmo com a chave do silencioso ligada; IA mais sensível (normaliza gravações baixas); no celular, passo a passo da Gravação de Tela para tirar a partitura de vídeos do YouTube.

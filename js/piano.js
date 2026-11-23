@@ -476,45 +476,119 @@ function pianoStatus() {
   const el = $("#pzSt"); if (!el) return;
   el.innerHTML = `<span class="stchip ${INP.midiName ? "on" : ""}">🎹 ${INP.midiName ? esc(INP.midiName) : "Teclado USB desligado"}</span><span class="stchip ${MIC.on ? "on" : ""}">🎤 ${MIC.on ? "Microfone ouvindo" : "Microfone desligado"}</span>`;
 }
-const PSUB = [["", "Tocar"], ["partitura", "Partitura"], ["tirar", "Tirar música"], ["leitura", "Leitura"]];
-function pianoNav(cur) { return `<nav class="seg wide psub">${PSUB.map(([k, n]) => `<a href="#piano${k ? "-" + k : ""}" aria-current="${k === cur}" class="${k === cur ? "on" : ""}">${n}</a>`).join("")}</nav>`; }
-function songSelect(cur) {
-  const mine = mySongs();
-  return `<select id="pzSong" class="sel grow"><optgroup label="Músicas prontas">${SONGS.map(s => `<option value="${s.id}" ${s.id === cur.id ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</optgroup>${mine.length ? `<optgroup label="Minhas músicas">${mine.slice().reverse().map(s => `<option value="${s.id}" ${s.id === cur.id ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</optgroup>` : ""}</select>`;
-}
-function bindSongSelect(again) { $("#pzSong").onchange = e => { const s = findSong(e.target.value); if (s) { PZ.song = s; pzLoad(s); again(); } }; }
+// cabeçalho das telas internas, com volta para a central do Piano
+function subHead(t, sub) { return `<a class="back" href="#piano">${IC.back} Piano</a><header class="phead"><h1 class="display">${esc(t)}</h1>${sub ? `<p class="muted">${sub}</p>` : ""}</header>`; }
+function songPick(cur) { return `<a class="card songpick" href="#piano-musicas"><span class="spic">♪</span><span class="grow"><b>${esc(cur.title)}</b><small>Tom: ${esc(songKey(cur))} · toque para trocar de música</small></span><span class="spgo">›</span></a>`; }
 function viewPiano(sub) {
-  sub = sub || "";
-  if (sub === "leitura") return viewLeitura();
-  if (sub.startsWith("tirar")) { const q = sub.split("?yt=")[1]; return viewTirar(q ? decodeURIComponent(q) : null); }
-  if (sub === "partitura") return viewPartitura();
+  const [k, q] = (sub || "").split("?yt="), yt = q ? decodeURIComponent(q) : null;
+  const R = { tocar: viewTocar, musicas: viewMusicas, partitura: viewPartitura, youtube: () => viewYoutube(yt), tirar: () => viewYoutube(yt), arquivo: viewArquivo, gravar: viewGravar, teclado: viewTeclado, leitura: viewLeitura };
+  (R[k] || pianoHub)();
+}
+const PTILES = [
+  ["Praticar", [["tocar", "🎹", "Tocar", "Notas caindo no teclado. A música espera você acertar.", "#FF8A3D", "#FFC145"], ["leitura", "𝄞", "Treino de leitura", "Leia a nota na pauta e toque.", "#2B8A3E", "#8CE99A"]]],
+  ["Partituras", [["musicas", "📚", "Minhas músicas", "Biblioteca: tocar ou ver a partitura.", "#6D3FE0", "#B794FF"], ["youtube", "▶", "Do YouTube", "Cole o link: identifica a música e tira a partitura.", "#E03131", "#FF8787"], ["arquivo", "⬆", "Subir áudio ou vídeo", "A IA escreve a partitura com cifras.", "#1C7ED6", "#74C0FC"], ["gravar", "🎤", "Gravar", "Cante ou toque perto do celular.", "#C2255C", "#F783AC"]]],
+  ["Configurar", [["teclado", "🔌", "Meu teclado", "Conectar teclado USB ou microfone.", "#495057", "#ADB5BD"]]]
+];
+function pianoHub() {
+  const cur = PZ.song || SONGS[0], n = mySongs().length;
+  app().innerHTML = `<header class="phead"><p class="eyebrow">Piano</p><h1 class="display">Toque e tire partituras</h1></header>
+  <section class="card hubcont"><p class="eyebrow">Continuar</p><div class="row" style="flex-wrap:nowrap"><span class="spic big">♪</span><div class="grow"><b>${esc(cur.title)}</b><p class="small muted">Tom: ${esc(songKey(cur))}</p></div></div>
+    <div class="row"><a class="btn pri" href="#piano-tocar">${IC.play} Tocar</a><a class="btn" href="#piano-partitura">Partitura</a><a class="btn" href="#piano-musicas">Trocar</a></div></section>
+  ${PTILES.map(([g, ts]) => `<section class="stack"><h2 class="sec">${g}</h2><div class="ptiles">${ts.map(([k, ic, t, d, c1, c2]) => `<a class="ptile" href="#piano-${k}" style="--c1:${c1};--c2:${c2}"><span class="pti">${ic}</span><b>${t}</b><span>${k === "musicas" ? `${SONGS.length + n} músicas · ` : k === "teclado" ? (INP.midiName ? "Conectado · " : "") : ""}${d}</span></a>`).join("")}</div></section>`).join("")}`;
+}
+function viewMusicas() {
+  const mine = mySongs().slice().reverse(), cur = PZ.song || SONGS[0];
+  const card = (s, own) => `<div class="card mcardx ${s.id === cur.id ? "cur" : ""}"><div class="grow"><b>${esc(s.title)}</b><p class="small muted">Tom: ${esc(songKey(s))}${s.notes ? ` · ${s.notes.length} notas` : ""}</p>${s.sub ? `<p class="small muted">${esc(s.sub)}</p>` : ""}</div>
+    <div class="row"><button class="btn pri" data-play="${s.id}">${IC.play} Tocar</button><button class="btn" data-score="${s.id}">Partitura</button>${own ? `<button class="btn danger" data-del="${s.id}" aria-label="Apagar">Apagar</button>` : ""}</div></div>`;
+  app().innerHTML = `${subHead("Minhas músicas", "Escolha uma música para tocar ou ver a partitura.")}
+  <div class="row"><a class="btn" href="#piano-youtube">+ Do YouTube</a><a class="btn" href="#piano-arquivo">+ Subir áudio/vídeo</a><a class="btn" href="#piano-gravar">+ Gravar</a></div>
+  <h2 class="sec">Tiradas por você</h2>
+  ${mine.length ? `<div class="stack">${mine.map(s => card(s, true)).join("")}</div>` : `<p class="small muted">Ainda nenhuma. Tire a partitura de um vídeo do YouTube, de um áudio ou de uma gravação.</p>`}
+  <h2 class="sec">Músicas prontas</h2><div class="stack">${SONGS.map(s => card(s, false)).join("")}</div>`;
+  const use = id => { const s = findSong(id); if (s) { PZ.song = s; pzLoad(s); } return s; };
+  app().querySelectorAll("[data-play]").forEach(b => b.onclick = () => { if (use(b.dataset.play)) location.hash = "#piano-tocar"; });
+  app().querySelectorAll("[data-score]").forEach(b => b.onclick = () => { if (use(b.dataset.score)) location.hash = "#piano-partitura"; });
+  app().querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (!confirm("Apagar esta música?")) return; saveMySongs(mySongs().filter(s => s.id !== b.dataset.del)); if (PZ.song && PZ.song.id === b.dataset.del) { PZ.song = SONGS[0]; pzLoad(PZ.song); } viewMusicas(); });
+}
+// escolha "música completa (IA)" × "só a melodia", usada nas telas de YouTube, arquivo e gravação
+let TR_MODE = "poly";
+function modeSeg() { return `<div class="seg wide" id="trMode"><button data-v="poly" aria-pressed="${TR_MODE === "poly"}">Música completa (IA)</button><button data-v="mono" aria-pressed="${TR_MODE === "mono"}">Só a melodia</button></div><p class="small muted" id="trModeTxt"></p>`; }
+function bindModeSeg() {
+  const t = () => { const e = $("#trModeTxt"); if (e) e.innerHTML = TR_MODE === "poly" ? "A IA (Basic Pitch, do Spotify) roda no seu aparelho e tira acordes, baixo e melodia. Melhor com piano ou violão. Na primeira vez baixa uns 3 MB." : "Rápido e sem internet: uma nota por vez. Ideal para voz, flauta ou solo."; };
+  t(); const m = $("#trMode"); if (m) m.querySelectorAll("button").forEach(b => b.onclick = () => { TR_MODE = b.dataset.v; m.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); t(); });
+}
+function warnClaude() { return onSite() ? "" : `<section class="card stack warnc"><b>Você está com o Harpa aberto dentro do app do Claude.</b><p class="small">Aqui dentro a internet é bloqueada por segurança, então o YouTube e a IA não funcionam. Abra o site do Harpa:</p><a class="btn pri" href="${siteLink()}" target="_blank" rel="noopener">Abrir o site do Harpa</a></section>`; }
+function viewYoutube(autoYt) {
+  const y = YT.info;
+  app().innerHTML = `${subHead("Do YouTube", "Cole o link: o Harpa identifica a música e ajuda a tirar a partitura.")}${warnClaude()}
+  <section class="card stack"><div class="row"><input id="ytU" class="inp grow" placeholder="Cole aqui o link do YouTube" inputmode="url" value="${y ? esc(y.url) : ""}"><button class="btn pri" id="ytGo">Identificar</button></div>
+    <div id="ytOut">${y ? ytCard(y) : ""}</div></section>
+  <section class="card stack"><p class="eyebrow">Como escrever a partitura</p>${modeSeg()}<div id="trMsg" class="trmsg"></div></section>`;
+  bindModeSeg();
+  $("#ytGo").onclick = ytIdentify; $("#ytU").onkeydown = e => { if (e.key === "Enter") ytIdentify(); };
+  if (y) bindYt();
+  if (autoYt) { $("#ytU").value = autoYt; ytIdentify(); }
+}
+function viewArquivo() {
+  app().innerHTML = `${subHead("Subir áudio ou vídeo", "MP3, M4A, WAV, MP4 ou um vídeo da galeria (até 4 minutos).")}${warnClaude()}
+  <section class="card stack">${modeSeg()}
+    <label class="btn pri big" for="trF">Escolher arquivo</label><input type="file" id="trF" accept="audio/*,video/*" hidden>
+    <div id="trMsg" class="trmsg"></div></section>
+  <section class="card stack"><p class="eyebrow">Tem a música em MIDI?</p><p class="small muted">Arquivo .mid abre perfeito, com as duas mãos.</p><label class="btn" for="pzFile">Abrir arquivo MIDI</label><input type="file" id="pzFile" accept=".mid,.midi,audio/midi" hidden></section>`;
+  bindModeSeg();
+  $("#trF").onchange = async e => { const f = e.target.files[0]; if (!f) return; trMsg("Lendo o arquivo…"); try { const ab = await AU.init().decodeAudioData(await f.arrayBuffer()); await trRun(ab, f.name.replace(/\.[^.]+$/, ""), TR_MODE); } catch (err) { trMsg("Não consegui ler esse arquivo. Tente MP3, M4A ou MP4."); } };
+  $("#pzFile").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const r = parseMidi(await f.arrayBuffer()); const s = Object.assign({ id: "u" + Date.now(), title: f.name.replace(/\.midi?$/i, ""), sub: `Arquivo MIDI · ${r.notes.length} notas · ${r.bpm} BPM` }, r); const a = mySongs(); a.push(s); saveMySongs(a); PZ.song = s; pzLoad(s); toast("Música aberta!"); location.hash = "#piano-partitura"; }
+    catch (err) { toast("Não consegui abrir: " + err.message); }
+  };
+}
+function viewGravar() {
+  app().innerHTML = `${subHead("Gravar", "Cante ou toque perto do celular e o Harpa escreve a partitura.")}${warnClaude()}
+  <section class="card stack">${modeSeg()}
+    <button class="btn pri big recbtn" id="trRec">🎤 Começar a gravar</button>
+    <div id="trMsg" class="trmsg"></div></section>
+  <section class="card stack tips"><p class="eyebrow">Para sair bom</p><ul class="small steps"><li>Lugar silencioso, celular a uns 30 cm do instrumento ou da boca.</li><li>Uma pessoa ou instrumento por vez sai melhor.</li><li>Para tirar música de um vídeo, toque o vídeo em <b>outro aparelho</b>, ou use a Gravação de Tela (veja em <a href="#piano-youtube">Do YouTube</a>).</li></ul></section>`;
+  bindModeSeg();
+  $("#trRec").onclick = () => recordAudio(() => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }), "gravação " + new Date().toLocaleTimeString().slice(0, 5), () => TR_MODE);
+}
+function viewTeclado() {
+  app().innerHTML = `${subHead("Meu teclado", "Toque no seu teclado de verdade e o Harpa ouve cada nota.")}
+  <section class="card stack"><div id="pzSt" class="row"></div>
+    <button class="btn pri big" id="pzMidi">🔌 Conectar teclado USB</button>
+    <p class="small muted">Teclado digital (como o Casio): ligue o cabo USB no computador ou celular Android e use o <b>Chrome</b> ou o <b>Edge</b>. O iPhone não aceita teclado USB no navegador.</p></section>
+  <section class="card stack"><button class="btn big" id="pzMic">${MIC.on ? "Desligar microfone" : "🎤 Usar o microfone"}</button>
+    <p class="small muted">Para piano acústico ou no iPhone: o microfone ouve uma nota por vez.</p></section>
+  <section class="card stack"><label class="tog"><input type="checkbox" id="pzAS" ${INP.appSound ? "checked" : ""}> Som do app também quando tocar no teclado USB</label><p class="small muted">Desligue se o som do próprio teclado já sai nas caixas.</p></section>
+  <section class="card stack"><p class="eyebrow">Teste aqui</p><p class="small muted" id="kbTest">Toque uma tecla no seu teclado…</p></section>
+  <a class="btn pri" href="#piano-tocar">${IC.play} Ir tocar</a>`;
+  pianoStatus();
+  $("#pzMidi").onclick = async () => { await INP.connectMidi(); pianoStatus(); };
+  $("#pzMic").onclick = async () => { if (MIC.on) MIC.stop(); else await MIC.start(); viewTeclado(); };
+  $("#pzAS").onchange = e => { INP.appSound = e.target.checked; };
+  INP.on((m, d) => { const t = $("#kbTest"); if (t && d) t.innerHTML = `Você tocou <b>${T.midiName(m)}</b> ✓`; });
+}
+function viewTocar() {
   const cur = PZ.song || SONGS[0];
-  app().innerHTML = `${pianoNav("")}
-  <section class="card stack">
-    <div class="row">${songSelect(cur)}</div>
-    <p class="small muted" id="pzSub"></p>
-    <div class="row pzctl">
-      <button class="btn pri" id="pzPlay">${IC.play} Tocar</button><button class="btn" id="pzRe">Recomeçar</button><button class="btn" id="pzSv">Ver partitura</button>
-      <select id="pzMode" class="sel"><option value="wait">Esperar (aprender)</option><option value="play">Tocar junto</option><option value="watch">Só assistir</option></select>
-      <select id="pzHand" class="sel"><option value="R">Mão direita</option><option value="L">Mão esquerda</option><option value="both">As duas mãos</option></select>
+  app().innerHTML = `${subHead("Tocar", "")}
+  ${songPick(cur)}
+  <section class="card stack pzcard">
+    <div class="pzbtns"><button class="btn pri" id="pzPlay">${IC.play} Tocar</button><button class="btn" id="pzRe">Recomeçar</button><button class="btn" id="pzSv">Partitura</button></div>
+    <div class="pzopts"><select id="pzMode" class="sel"><option value="wait">Esperar</option><option value="play">Tocar junto</option><option value="watch">Assistir</option></select>
+      <select id="pzHand" class="sel"><option value="R">Mão direita</option><option value="L">Mão esquerda</option><option value="both">2 mãos</option></select>
       <select id="pzSpd" class="sel"><option value=".5">50%</option><option value=".75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option></select>
-      <label class="tog"><input type="checkbox" id="pzMet"> Metrônomo</label>
     </div>
+    <div class="row" style="justify-content:space-between"><label class="tog"><input type="checkbox" id="pzMet"> Metrônomo</label><a class="small" href="#piano-teclado">🎹 ${INP.midiName ? "Teclado conectado" : MIC.on ? "Microfone ligado" : "Conectar teclado"}</a></div>
     <div id="pzHud" class="pzhud"></div>
     <canvas id="pzc" class="pzc" aria-label="Notas caindo sobre o teclado"></canvas>
     <input type="range" id="pzSeek" class="range" min="0" step=".25" value="0">
     <p class="small muted">Laranja = mão direita · roxo = mão esquerda · verde = acertou. Toque no teclado da tela para tocar.</p>
-  </section>
-  <section class="card stack"><p class="eyebrow">Seu teclado</p><div id="pzSt" class="row"></div>
-    <div class="row"><button class="btn" id="pzMidi">Conectar teclado USB</button><button class="btn" id="pzMic">${MIC.on ? "Desligar microfone" : "Usar microfone"}</button><label class="tog"><input type="checkbox" id="pzAS" ${INP.appSound ? "checked" : ""}> Som do app também no teclado USB</label></div>
-    <p class="small muted">Teclado digital (como o Casio): cabo USB + Chrome ou Edge no PC ou Android. No iPhone, use o microfone (uma nota por vez) ou toque na tela.</p></section>`;
-  pianoStatus();
+  </section>`;
   const sel = id => $("#" + id);
   if (![.5, .75, 1, 1.25].includes(PZ.speed)) PZ.speed = 1;
   sel("pzMode").value = PZ.mode; sel("pzHand").value = PZ.hand; sel("pzSpd").value = String(PZ.speed); sel("pzMet").checked = PZ.metro;
   if (PZ.song !== cur || !PZ.end) pzLoad(cur);
-  PZ.song = cur; sel("pzSub").textContent = cur.sub || ""; sel("pzSeek").max = PZ.end; pzDraw(); pzHud();
-  bindSongSelect(() => viewPiano());
+  PZ.song = cur; sel("pzSeek").max = PZ.end; pzDraw(); pzHud();
   sel("pzPlay").onclick = pzPlay;
   sel("pzRe").onclick = () => { PZ.playing = false; pzLoad(PZ.song); };
   sel("pzSv").onclick = openScoreViewer;
@@ -523,9 +597,6 @@ function viewPiano(sub) {
   sel("pzSpd").onchange = e => { PZ.speed = +e.target.value; };
   sel("pzMet").onchange = e => { PZ.metro = e.target.checked; };
   sel("pzSeek").oninput = e => { pzReset(+e.target.value); };
-  sel("pzAS").onchange = e => { INP.appSound = e.target.checked; };
-  sel("pzMidi").onclick = async () => { await INP.connectMidi(); pianoStatus(); };
-  sel("pzMic").onclick = async () => { if (MIC.on) MIC.stop(); else await MIC.start(); viewPiano(); };
   const cv = sel("pzc"), ptr = {};
   const keyAt = ev => { const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, H = cv.clientHeight, KH = Math.min(120, H * .24), KT = H - KH; if (y < KT) return null; const { X } = pzKeys(cv.clientWidth); let hit = null; for (const m in X) { const k = X[m]; if (k.b && y < KT + KH * .62 && x >= k.x && x <= k.x + k.w) return +m; } for (const m in X) { const k = X[m]; if (!k.b && x >= k.x && x < k.x + k.w) hit = +m; } return hit; };
   cv.onpointerdown = ev => { const m = keyAt(ev); if (m == null) { pzPlay(); return; } ev.preventDefault(); cv.setPointerCapture(ev.pointerId); ptr[ev.pointerId] = m; INP.press(m, "touch"); pzDraw(); };
@@ -537,16 +608,16 @@ function viewPiano(sub) {
 function viewPartitura() {
   const cur = PZ.song || SONGS[0]; if (PZ.song !== cur || !PZ.end) pzLoad(cur);
   const mine = mySongs().some(s => s.id === cur.id);
-  app().innerHTML = `${pianoNav("partitura")}
-  <section class="card stack"><div class="row">${songSelect(cur)}</div><p class="keyline">${keyLine(cur)}</p><p class="small muted">${esc(cur.sub || "")}</p>
+  app().innerHTML = `${subHead("Partitura", "")}
+  ${songPick(cur)}
+  <section class="card stack"><p class="keyline">${keyLine(cur)}</p><p class="small muted">${esc(cur.sub || "")}</p>
     ${cur.keyName && /gravação|Melodia/i.test(cur.sub + cur.title) && cur.notes.length ? `<p class="small muted">Gravação pelo microfone pega ruído: se a partitura parecer bagunçada (muitos ♯ soltos), o tom também pode estar errado. Para som limpo, use a Gravação de Tela.</p>` : ""}
-    <div class="row"><button class="btn pri" id="ptFull">Abrir em tela cheia</button><a class="btn" href="#piano">Tocar com notas caindo</a>${mine ? `<button class="btn danger" id="ptDel">Apagar esta</button>` : ""}</div></section>
+    <div class="row"><button class="btn pri" id="ptFull">Abrir em tela cheia</button><a class="btn" href="#piano-tocar">Tocar com notas caindo</a>${mine ? `<button class="btn danger" id="ptDel">Apagar esta</button>` : ""}</div></section>
   <button class="card scprev" id="ptPrev" aria-label="Abrir a partitura em tela cheia"><div id="pzScore"></div><span class="scopen-tag">Toque para abrir em tela cheia ⤢</span></button>
-  <p class="small muted center">Quer a partitura de outra música? Vá em <a href="#piano-tirar">Tirar música</a>: link do YouTube, áudio, vídeo ou arquivo MIDI.</p>`;
-  bindSongSelect(() => viewPartitura());
+  <p class="small muted center">Quer a partitura de outra música? Use <a href="#piano-youtube">Do YouTube</a>, <a href="#piano-arquivo">Subir áudio/vídeo</a> ou <a href="#piano-gravar">Gravar</a>.</p>`;
   renderScore($("#pzScore"), { maxBars: 8 });
   $("#ptFull").onclick = openScoreViewer; $("#ptPrev").onclick = openScoreViewer;
-  const d = $("#ptDel"); if (d) d.onclick = () => { if (!confirm("Apagar esta música?")) return; saveMySongs(mySongs().filter(s => s.id !== cur.id)); PZ.song = SONGS[0]; pzLoad(PZ.song); viewPartitura(); };
+  const d = $("#ptDel"); if (d) d.onclick = () => { if (!confirm("Apagar esta música?")) return; saveMySongs(mySongs().filter(s => s.id !== cur.id)); PZ.song = SONGS[0]; pzLoad(PZ.song); location.hash = "#piano-musicas"; };
 }
 
 // ---------- tirar música: YouTube, áudio/vídeo, MIDI, gravação ----------
@@ -554,36 +625,7 @@ const YT = { info: null };
 function ytId(u) { const m = String(u).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(u.trim()) ? u.trim() : null); }
 const SITE = "https://contatojampro5-dot.github.io/escola-musica-/", IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 function onSite() { return /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname); }
-function siteLink(yt) { return SITE + "#piano-tirar" + (yt ? "?yt=" + encodeURIComponent(yt) : ""); }
-function viewTirar(autoYt) {
-  const y = YT.info;
-  app().innerHTML = `${pianoNav("tirar")}
-  ${onSite() ? "" : `<section class="card stack warnc"><b>Você está com o Harpa aberto dentro do app do Claude.</b><p class="small">Aqui dentro a internet é bloqueada por segurança, então o YouTube e a IA não funcionam. Abra o site do Harpa (dá para colocar na tela inicial do celular):</p><a class="btn pri" href="${siteLink()}" target="_blank" rel="noopener">Abrir o site do Harpa</a></section>`}
-  <section class="card stack"><p class="eyebrow">1 · Link do YouTube</p><h2>Identificar a música</h2>
-    <div class="row"><input id="ytU" class="inp grow" placeholder="Cole aqui o link do YouTube" inputmode="url" value="${y ? esc(y.url) : ""}"><button class="btn pri" id="ytGo">Identificar</button></div>
-    <div id="ytOut">${y ? ytCard(y) : ""}</div></section>
-  <section class="card stack"><p class="eyebrow">2 · Subir a música</p><h2>Escrever a partitura de um áudio ou vídeo</h2>
-    <p class="small muted">MP3, M4A, WAV, MP4 ou um vídeo da galeria. Até 4 minutos.</p>
-    <div class="seg wide" id="trMode"><button data-v="poly" aria-pressed="true">Música completa (IA)</button><button data-v="mono" aria-pressed="false">Só a melodia</button></div>
-    <p class="small muted" id="trModeTxt"></p>
-    <div class="row"><label class="btn pri" for="trF">Escolher arquivo</label><input type="file" id="trF" accept="audio/*,video/*" hidden><button class="btn" id="trRec">Gravar pelo microfone</button></div>
-    <div id="trMsg" class="trmsg"></div></section>
-  <section class="card stack"><p class="eyebrow">3 · Arquivo MIDI</p><p class="small muted">Se você tiver a música em .mid, ela abre perfeita, com as duas mãos.</p><div class="row"><label class="btn" for="pzFile">Abrir arquivo MIDI</label><input type="file" id="pzFile" accept=".mid,.midi,audio/midi" hidden></div></section>`;
-  let mode = "poly";
-  const modeTxt = () => { $("#trModeTxt").innerHTML = mode === "poly" ? "Usa o <b>Basic Pitch</b> (IA gratuita do Spotify) no próprio aparelho: tira acordes, baixo e melodia. Melhor com piano ou violão solo. Na primeira vez baixa uns 3 MB." : "Rápido e sem internet. Tira uma nota por vez: ideal para voz, flauta ou solo."; };
-  modeTxt();
-  $("#trMode").querySelectorAll("button").forEach(b => b.onclick = () => { mode = b.dataset.v; $("#trMode").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); modeTxt(); });
-  $("#ytGo").onclick = ytIdentify; $("#ytU").onkeydown = e => { if (e.key === "Enter") ytIdentify(); };
-  if (y) bindYt();
-  if (autoYt) { $("#ytU").value = autoYt; ytIdentify(); }
-  $("#trF").onchange = async e => { const f = e.target.files[0]; if (!f) return; trMsg("Lendo o arquivo…"); try { const ab = await AU.init().decodeAudioData(await f.arrayBuffer()); await trRun(ab, f.name.replace(/\.[^.]+$/, ""), mode); } catch (err) { trMsg("Não consegui ler esse arquivo. Tente MP3, M4A ou MP4."); } };
-  $("#trRec").onclick = () => recordAudio(() => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } }), "gravação " + new Date().toLocaleTimeString().slice(0, 5), () => mode);
-  $("#pzFile").onchange = async e => {
-    const f = e.target.files[0]; if (!f) return;
-    try { const r = parseMidi(await f.arrayBuffer()); const s = Object.assign({ id: "u" + Date.now(), title: f.name.replace(/\.midi?$/i, ""), sub: `Arquivo MIDI · ${r.notes.length} notas · ${r.bpm} BPM` }, r); const a = mySongs(); a.push(s); saveMySongs(a); PZ.song = s; pzLoad(s); toast("Música aberta!"); location.hash = "#piano-partitura"; }
-    catch (err) { toast("Não consegui abrir: " + err.message); }
-  };
-}
+function siteLink(yt) { return SITE + "#piano-youtube" + (yt ? "?yt=" + encodeURIComponent(yt) : ""); }
 function trMsg(t, p) { const m = $("#trMsg"); if (m) m.innerHTML = t + (p != null ? `<div class="qbar"><span style="width:${Math.round(p * 100)}%"></span></div>` : ""); }
 async function trRun(ab, name, mode) {
   let r;
@@ -591,7 +633,7 @@ async function trRun(ab, name, mode) {
     if (mode === "poly") { trMsg("Carregando a IA (só na primeira vez)…", 0); r = await transcribePoly(ab, p => trMsg(`A IA está ouvindo a música… ${Math.round(p * 100)}%`, p)); }
     else r = await transcribeBuffer(ab, p => trMsg(`Ouvindo a melodia… ${Math.round(p * 100)}%`, p));
   } catch (e) { trMsg(mode === "poly" ? "Não consegui carregar a IA (precisa de internet). Tente o modo <b>Só a melodia</b>." : "Deu um erro ao processar o áudio."); return; }
-  if (!r || r.notes.length < 3) { trMsg(`Não encontrei notas claras em ${Math.round(ab.duration)} s de áudio. O som estava muito baixo ou com muito ruído. ${IOS ? "No iPhone, use a <b>Gravação de Tela</b> (veja os passos no item 1)." : "Tente de novo com o som mais alto."}`); return; }
+  if (!r || r.notes.length < 3) { trMsg(`Não encontrei notas claras em ${Math.round(ab.duration)} s de áudio. O som estava muito baixo ou com muito ruído. ${IOS ? "No iPhone, use a <b>Gravação de Tela</b> (passo a passo na tela <b>Do YouTube</b>)." : "Tente de novo com o som mais alto."}`); return; }
   const s = Object.assign({ id: "u" + Date.now(), title: name, sub: `${mode === "poly" ? "Tirada pela IA" : "Melodia tirada do áudio"} de ${Math.round(ab.duration)} s · tom provável ${r.keyName} · ~${r.bpm} BPM · ${r.notes.length} notas` }, r);
   const a = mySongs(); a.push(s); saveMySongs(a); PZ.song = s; PZ.hand = mode === "poly" ? "both" : "R"; pzLoad(s);
   toast("Partitura pronta!"); location.hash = "#piano-partitura";
@@ -632,7 +674,7 @@ function ytCard(y) {
   <div class="ytframe"><iframe src="https://www.youtube-nocookie.com/embed/${y.id}" title="${esc(y.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
   <p class="eyebrow">Escrever a partitura deste vídeo</p>
   <p class="small muted">O YouTube não deixa nenhum app baixar o som direto. ${desk ? "Então o Harpa <b>escuta</b> o vídeo tocando: toque em <b>Gravar o som desta aba</b>, escolha <b>esta aba</b>, marque <b>Compartilhar áudio</b> e dê play no vídeo acima." : ""}</p>
-  ${desk ? "" : `<div class="tips stack"><p class="small"><b>No celular, o melhor jeito (som perfeito):</b></p><ol class="small steps"><li>Abra a <b>Central de Controle</b> (deslize do canto de cima, à direita) e toque em <b>Gravar Tela</b> ⏺.</li><li>Volte aqui e dê play no vídeo acima até o fim do trecho que você quer.</li><li>Pare a gravação (barra vermelha lá em cima).</li><li>Em <b>2 · Subir a música</b>, toque em <b>Escolher arquivo</b> e escolha o vídeo gravado.</li></ol><p class="small muted">Gravar pelo microfone do mesmo celular quase não funciona: o iPhone abaixa o próprio som enquanto o microfone grava. Pelo microfone, toque o vídeo em <b>outro aparelho</b> (TV, PC, outro celular).</p></div>`}
+  ${desk ? "" : `<div class="tips stack"><p class="small"><b>No celular, o melhor jeito (som perfeito):</b></p><ol class="small steps"><li>Abra a <b>Central de Controle</b> (deslize do canto de cima, à direita) e toque em <b>Gravar Tela</b> ⏺.</li><li>Volte aqui e dê play no vídeo acima até o fim do trecho que você quer.</li><li>Pare a gravação (barra vermelha lá em cima).</li><li>Abra <a href="#piano-arquivo"><b>Subir áudio/vídeo</b></a> e escolha o vídeo gravado.</li></ol><p class="small muted">Gravar pelo microfone do mesmo celular quase não funciona: o iPhone abaixa o próprio som enquanto o microfone grava. Pelo microfone, toque o vídeo em <b>outro aparelho</b> (TV, PC, outro celular).</p></div>`}
   <div class="row">${desk ? `<button class="btn pri recbtn" id="ytTab">Gravar o som desta aba</button>` : ""}<button class="btn recbtn" id="ytMic">Gravar pelo microfone</button></div>`;
 }
 function bindYt() {
@@ -652,7 +694,7 @@ const LEI = {
 let LS_ = null;
 function viewLeitura() {
   const lv = LS_ ? LS_.lv : (S.leitLv || 1);
-  app().innerHTML = `${pianoNav("leitura")}<header class="phead"><p class="eyebrow">Treino de leitura</p><h1 class="display">Leia e toque</h1><p class="muted">Aparece uma nota na pauta. Toque a mesma nota (a oitava conta!) no teclado da tela, no teclado USB ou pelo microfone. 20 notas por rodada.</p></header>
+  app().innerHTML = `<a class="back" href="#piano">${IC.back} Piano</a><header class="phead"><p class="eyebrow">Treino de leitura</p><h1 class="display">Leia e toque</h1><p class="muted">Aparece uma nota na pauta. Toque a mesma nota (a oitava conta!) no teclado da tela, no teclado USB ou pelo microfone. 20 notas por rodada.</p></header>
   <section class="card stack"><div class="chips">${LEI.levels.map((l, i) => `<button class="chip btnchip ${i + 1 === lv ? "sel" : ""}" data-lv="${i + 1}">${i + 1}. ${esc(l[0])}</button>`).join("")}</div>
   <div id="leiBox" class="stack"></div></section>`;
   app().querySelectorAll("[data-lv]").forEach(b => b.onclick = () => { S.leitLv = +b.dataset.lv; save(); LS_ = null; viewLeitura(); });

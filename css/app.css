@@ -550,3 +550,23 @@ body.scopen .tabs,body.scopen .top{display:none}
 .svt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
 .svt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .svt span{font-size:.78rem;color:#6b6258;font-weight:600}
+/* ===== v2.7: central do Piano ===== */
+.songpick{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);padding:12px 14px}
+.songpick small{display:block;color:var(--muted);font-size:.8rem}
+.spic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff;font-size:1.2rem;background:linear-gradient(140deg,var(--accent),var(--accent-2))}
+.spic.big{width:52px;height:52px;font-size:1.5rem;border-radius:15px}
+.spgo{font-size:1.6rem;color:var(--muted)}
+.hubcont{display:flex;flex-direction:column;gap:12px;background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 16%,var(--glass)),var(--glass) 70%)}
+.ptiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ptile{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:var(--r-lg);background:var(--glass);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);text-decoration:none;color:var(--ink);-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));min-height:132px;transition:transform .12s}
+.ptile:active{transform:scale(.97)}
+.ptile b{font-size:1rem;line-height:1.2}
+.ptile span:last-child{font-size:.78rem;color:var(--muted);line-height:1.3}
+.pti{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:1.35rem;color:#fff;background:linear-gradient(140deg,var(--c1),var(--c2));box-shadow:0 6px 14px color-mix(in srgb,var(--c1) 35%,transparent)}
+.mcardx{display:flex;flex-direction:column;gap:10px;padding:14px}
+.mcardx.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),var(--glass-shadow)}
+.pzbtns{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.pzbtns .btn{padding:10px 8px}
+.pzopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pzopts .sel{min-width:0;width:100%;font-size:.8rem;padding:8px 4px}
+@media (min-width:700px){.ptiles{grid-template-columns:repeat(3,1fr)}}

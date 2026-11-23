@@ -732,6 +732,7 @@ function route() {
   if (window._labStop) { window._labStop(); window._labStop = null; }
   MIX.stop(); METRO.stop();
   if (!h.startsWith("s-")) closeStory();
+  if (h !== "piano-tocar" && typeof PZ !== "undefined" && !document.getElementById("scview")) PZ.playing = false;
   if (!h.startsWith("piano")) { if (typeof MIC !== "undefined" && MIC.on) MIC.stop(); if (typeof PZ !== "undefined") { PZ.playing = false; } window.onresize = null; }
   const [a, ...r] = h.split("-"), rest = r.join("-");
   window.scrollTo(0, 0);
