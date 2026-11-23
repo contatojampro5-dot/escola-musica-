@@ -23,6 +23,7 @@ Progresso salvo no aparelho (localStorage). `sw.js` deixa abrir sem internet dep
 `index.html` · `css/app.css` · `js/teoria.js` (teoria com grafia certa) · `js/audio.js` (motor de som Web Audio) · `js/art.js` (desenho dos mestres) · `js/base.js` (mestres, níveis, cards, guia) · `js/extras.js` (figurinhas, frases, teste) · `js/ui2.js` (telas no padrão Firmes) · `js/licoes1-3.js` (conteúdo) · `js/app.js` (telas).
 
 ## Versões
+- **v3.1**: estilos com pegada humana: dinâmica (acentos e notas fantasma), pedal, swing no gospel, antecipações, viradas no fim das frases, bossa com polegar alternado, hino com vozes seguindo a melodia, micro-variações de tempo e piano mais brilhante quando tocado forte.
 - **v3.0**: estilos de toque: o app gera o acompanhamento de qualquer música em Balada/Louvor, Gospel americano, Groove (R&B), Bossa nova, Baião, Hino tradicional e Arpejo, com cifras enriquecidas; tela "Estilos de toque" explica e toca cada estilo em I–V–vi–IV.
 - **v2.9**: mais 7 hinos de domínio público (Graça Excelsa, Que segurança sou de Jesus, Santo Santo Santo, Alegria ao mundo, Ó vinde fiéis, Doxologia, Mais perto quero estar), transcritos das partituras da Wikipédia, com baixo automático pelas cifras.
 - **v2.8**: 14 músicas novas de domínio público: hinos (Castelo Forte, Graças dai a Deus, Ó fronte ensanguentada, Despertai!, Jesus minha alegria, Vencendo vem Jesus) e clássicas (Mozart K. 545, Para Elisa, Minueto em Sol, Handel, Schubert, Verdi, Chopin, Joplin). Biblioteca separada em Hinos, Música clássica e Para começar.

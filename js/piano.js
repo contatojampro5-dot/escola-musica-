@@ -308,7 +308,13 @@ function pzTick(ts) {
   // tempo do metrônomo
   if (PZ.metro) for (let b = Math.floor(prev) + 1; b <= pos; b++) if (b >= 0 || b > -s.num - 1) AU.click(AU.ctx.currentTime, ((b % s.num) + s.num) % s.num === 0, AU.master);
   // notas automáticas
-  for (const n of s.notes) if (n.t > prev && n.t <= pos && (!userHand(n))) AU.note(n.m, AU.ctx.currentTime, Math.max(.15, n.d * 60 / s.bpm / PZ.speed), { v: PZ.mode === "watch" || n.h === "R" ? .75 : .55 });
+  // notas automáticas: força (v), sustentação/pedal (sd), balanço (sw) e micro-atraso humano (j) de cada nota
+  const spb = 60 / s.bpm / PZ.speed;
+  for (const n of s.notes) if (n.t > prev && n.t <= pos && (!userHand(n))) {
+    const when = AU.ctx.currentTime + Math.max(0, (n.sw || 0) * spb + (n.j || 0));
+    const v = n.v != null ? (n.h === "L" ? n.v * .85 : n.v) : (PZ.mode === "watch" || n.h === "R" ? .75 : .55);
+    AU.note(n.m, when, Math.max(.12, (n.sd || n.d) * spb), { v });
+  }
   PZ.pos = pos;
   // julgar grupo atual
   if (g && g.armed != null) {

@@ -49,12 +49,13 @@ const AU = {
     const osc = c.createOscillator(), g = c.createGain();
     if (["sine", "triangle", "square", "sawtooth"].includes(tim)) osc.type = tim; else osc.setPeriodicWave(this.wave(tim));
     osc.frequency.value = freq;
-    if (o.cents) osc.detune.value = o.cents;
+    osc.detune.value = (o.cents || 0) + (tim === "piano" ? (Math.random() - .5) * 5 : 0); // leve desafinação natural
     let out = osc;
     if (tim === "piano") { // filtro que fecha com o tempo: brilho no ataque, som mais escuro depois
       const f = c.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.6;
-      f.frequency.setValueAtTime(Math.min(16000, freq * 14), t);
-      f.frequency.setTargetAtTime(Math.min(9000, freq * 4), t, 0.25);
+      const vv = o.v == null ? .8 : o.v; // tocado mais forte = mais brilhante, como um piano de verdade
+      f.frequency.setValueAtTime(Math.min(16000, freq * (5 + 13 * vv)), t);
+      f.frequency.setTargetAtTime(Math.min(9000, freq * (2.5 + 2.5 * vv)), t, 0.25);
       osc.connect(f); out = f;
     }
     out.connect(g); g.connect(dest);
@@ -64,7 +65,7 @@ const AU = {
       const decay = Math.max(.35, 1.6 - (freq - 130) / 900);
       g.gain.linearRampToValueAtTime(vol, t + .006);
       g.gain.setTargetAtTime(vol * .0001, t + .01, decay);
-      g.gain.setTargetAtTime(0, t + dur, .07);
+      g.gain.setTargetAtTime(0, t + dur, .11);
     } else {
       g.gain.linearRampToValueAtTime(vol * sq, t + .02);
       g.gain.setValueAtTime(vol * sq, t + Math.max(.03, dur - .03));
