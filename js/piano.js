@@ -142,7 +142,7 @@ async function transcribeBuffer(ab, onProg) {
   const { y, sr } = decimate(ch.subarray(0, max), ab.sampleRate, 11025);
   const W = 384, hop = 128, tmin = Math.floor(sr / 1100), tmax = Math.floor(sr / 70), fr = [];
   let peak = 0; for (let i = 0; i < y.length; i++) peak = Math.max(peak, Math.abs(y[i]));
-  const thr = Math.max(.008, peak * .06);
+  const thr = Math.max(.01, peak * .1);
   for (let s = 0, k = 0; s + W + tmax < y.length; s += hop, k++) {
     let rms = 0; for (let i = 0; i < W; i++) rms += y[s + i] * y[s + i]; rms = Math.sqrt(rms / W);
     let m = null; if (rms > thr) { const r = yin(y, sr, s, W, tmin, tmax); if (r && r.ap < .2) m = 69 + 12 * Math.log2(r.f / 440); }
@@ -164,7 +164,7 @@ async function transcribeBuffer(ab, onProg) {
     else { cur.e = fr[i].t + dt; cur.ms.push(mr); cur.mf = cur.mf * .8 + m * .2; }
   }
   if (cur) notes.push(cur);
-  let ns = notes.filter(n => n.e - n.s >= .08).map(n => { const c = {}; n.ms.forEach(x => c[x] = (c[x] || 0) + 1); const m = +Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; return { s: n.s, e: n.e, m, att: n.att }; });
+  let ns = notes.filter(n => n.e - n.s >= .11).map(n => { const c = {}; n.ms.forEach(x => c[x] = (c[x] || 0) + 1); const m = +Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; return { s: n.s, e: n.e, m, att: n.att }; });
   // junta notas iguais separadas por buracos mínimos
   ns = ns.reduce((a, n) => { const l = a[a.length - 1]; if (l && l.m === n.m && !n.att && n.s - l.e < .015) l.e = n.e; else a.push(n); return a; }, []);
   if (!ns.length) return null;
@@ -177,7 +177,8 @@ function notesToSong(ns, poly) {
   let best = { bpm: 90, err: 1e9 };
   for (let bpm = 60; bpm <= 150; bpm++) { const g = 60 / bpm / 4; let e = 0; on.forEach(t => { const q = t / g; e += Math.abs(q - Math.round(q)); }); e = e / on.length + Math.abs(bpm - 95) / 2000; if (e < best.err) best = { bpm, err: e }; }
   const bpm = best.bpm, bs = 60 / bpm, q = x => Math.round(x * 4) / 4;
-  let out = ns.map(n => ({ t: q((n.s - t0) / bs), d: Math.max(.25, q((n.e - n.s) / bs)), m: n.m, h: poly ? (n.m >= 60 ? "R" : "L") : "R" }));
+  const med = ns.map(n => n.m).sort((a, b) => a - b)[ns.length >> 1], monoH = med < 57 ? "L" : "R";
+  let out = ns.map(n => ({ t: q((n.s - t0) / bs), d: Math.max(.25, q((n.e - n.s) / bs)), m: n.m, h: poly ? (n.m >= 60 ? "R" : "L") : monoH }));
   if (poly) {
     // tira notas repetidas no mesmo instante e limita o tamanho
     const seen = new Set(); out = out.filter(n => { const k = n.t + ":" + n.m; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 6000);
@@ -329,21 +330,34 @@ function pzDone() {
 function pzInput(m, isDown) { if (PZ.song && !PZ.playing) pzDraw(); else if (PZ.song) { /* desenhado no próximo quadro */ } }
 
 
+// ---------- tom da música ----------
+const KEY_PT = { C: "Dó maior", G: "Sol maior", D: "Ré maior", A: "Lá maior", E: "Mi maior", B: "Si maior", "F#": "Fá♯ maior", "C#": "Dó♯ maior", F: "Fá maior", Bb: "Si♭ maior", Eb: "Mi♭ maior", Ab: "Lá♭ maior", Db: "Ré♭ maior", Gb: "Sol♭ maior", Cb: "Dó♭ maior" };
+function songKey(s) {
+  if (s.keyName) return s.keyName;
+  const ch = songChords(s), last = ch.length ? ch[ch.length - 1].name : "", maj = KEY_PT[s.key] || s.key;
+  const rel = { C: "Lá menor", G: "Mi menor", D: "Si menor", A: "Fá♯ menor", E: "Dó♯ menor", F: "Ré menor", Bb: "Sol menor", Eb: "Dó menor" }[s.key];
+  return rel && /m$|m7$/.test(last) ? rel : maj;
+}
+function keyLine(s) { const k = songKey(s), sig = { C: 0, G: 1, D: 2, A: 3, E: 4, B: 5, "F#": 6, "C#": 7, F: -1, Bb: -2, Eb: -3, Ab: -4, Db: -5, Gb: -6, Cb: -7 }[s.key] || 0; return `<span class="keytag">Tom: <b>${esc(k)}</b>${s.keyName ? " (provável)" : ""}</span> <span class="small muted">${sig ? Math.abs(sig) + (sig > 0 ? " sustenido(s)" : " bemol(is)") + " na armadura" : "armadura sem acidentes"}</span>`; }
+
 // ---------- acordes (cifra) a partir das notas ----------
 const CH_T = [["", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["m7", [0, 3, 7, 10]], ["7M", [0, 4, 7, 11]], ["°", [0, 3, 6]], ["m7(♭5)", [0, 3, 6, 10]]];
 const NM_S = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"], NM_F = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 function songChords(s) {
   if (s._ch) return s._ch;
-  const step = s.den === 8 ? 3 : s.num === 3 ? 3 : 2, end = Math.max(...s.notes.map(n => n.t + n.d)), out = [];
+  const mono = new Set(s.notes.map(n => n.h)).size === 1 && !s.notes.some((n, i) => i && Math.abs(n.t - s.notes[i - 1].t) < .01);
+  const step = mono ? s.num : s.den === 8 ? 3 : s.num === 3 ? 3 : 2, end = Math.max(...s.notes.map(n => n.t + n.d)), out = [];
   const flat = !SHARP_KEYS.includes(s.key) && s.key !== "C", NM = flat ? NM_F : NM_S;
   const kr = T.pc(T.parse((s.key || "C").replace("m", "")) || T.parse("C")), scale = [0, 2, 4, 5, 7, 9, 11].map(x => (kr + x) % 12);
   for (let t0 = 0; t0 < end - .01; t0 += step) {
     const t1 = t0 + step, w = new Array(12).fill(0); let tot = 0, low = null;
-    s.notes.forEach(n => { const o = Math.min(t1, n.t + n.d) - Math.max(t0, n.t); if (o <= 0) return; const k = o * (n.t >= t0 - .01 ? 1 : .7) * (n.h === "L" ? 1.6 : 1); w[n.m % 12] += k; tot += k; if (n.t < t0 + step / 2 && (!low || n.m < low.m)) low = n; });
+    s.notes.forEach(n => { const o = Math.min(t1, n.t + n.d) - Math.max(t0, n.t); if (o <= 0) return; const strong = Math.abs(n.t % (s.den === 8 ? 3 : 2)) < .01, k = o * (n.t >= t0 - .01 ? 1 : .7) * (n.h === "L" && !mono ? 1.6 : 1) * (mono && strong ? 1.5 : 1); w[n.m % 12] += k; tot += k; if (n.t < t0 + step / 2 && (!low || n.m < low.m)) low = n; });
     if (tot < .2) continue;
+    if (mono) low = null; // melodia sozinha: não há baixo de verdade
     if (low) w[low.m % 12] += tot * .25;
     let best = null;
     for (let r = 0; r < 12; r++) for (const [suf, iv] of CH_T) {
+      if (mono && (iv.length === 4 || suf === "°")) continue;
       const pcs = iv.map(x => (r + x) % 12); let sc = 0;
       for (let p = 0; p < 12; p++) sc += pcs.includes(p) ? w[p] : -.6 * w[p];
       if (iv.length === 4 && w[pcs[3]] < tot * .18) sc -= tot * .5; // só põe a 7ª se ela soa de verdade
@@ -352,6 +366,7 @@ function songChords(s) {
       if (!pcs.slice(0, 2).every(p => w[p] > 0)) sc -= tot * .2; // precisa de fundamental e 3ª (ou 4ª)
       if (low && low.m % 12 === r) sc += tot * .3; else if (low) sc -= tot * .12;
       if (pcs.every(p => scale.includes(p))) sc += tot * .1; // acordes do tom primeiro
+      if (mono && [0, 5, 7].includes((r - kr + 12) % 12) && suf === "") sc += tot * .32; // melodia sozinha: I, IV e V primeiro
       if (!best || sc > best.sc + 1e-6) best = { sc, r, suf, pcs };
     }
     if (!best || best.sc < tot * .2) continue;
@@ -380,20 +395,20 @@ async function renderScore(el, o = {}) {
   const chords = o.noChords ? [] : songChords(s), hasR = s.notes.some(n => n.h === "R");
   const hasL = s.notes.some(n => n.h === "L"), shown = Math.min(nBars, o.maxBars || nBars);
   const W = Math.max(280, el.clientWidth - 8), sc = o.scale || (W < 600 ? .62 : .8), LW = W / sc;
-  const per = Math.max(1, Math.min(4, Math.floor((LW - 20) / 250))), mw = (LW - 20) / per, sysH = hasL ? 250 : 150, rows = Math.ceil(shown / per);
+  const per = Math.max(1, Math.min(4, Math.floor((LW - 20) / 250))), mw = (LW - 20) / per, sysH = hasL && hasR ? 250 : 150, rows = Math.ceil(shown / per);
   el.innerHTML = `<div class="scwrap"><div class="schi"></div><div class="scv"></div></div>`;
   const R = new VF.Renderer(el.querySelector(".scv"), VF.Renderer.Backends.SVG); R.resize(W, (rows * sysH + 20) * sc); const ctx = R.getContext(); ctx.scale(sc, sc);
   const boxes = [];
   for (let b = 0; b < shown; b++) {
     const row = Math.floor(b / per), col = b % per, x = 10 + col * mw, y = 30 + row * sysH, first = col === 0;
-    const st = new VF.Stave(x, y, mw), sb = new VF.Stave(x, y + 110, mw);
+    const st = new VF.Stave(x, y, mw), sb = new VF.Stave(x, hasR ? y + 110 : y, mw), two = hasR && hasL;
     if (first) { st.addClef("treble").addKeySignature(s.key.replace("m", "")); sb.addClef("bass").addKeySignature(s.key.replace("m", "")); if (b === 0) { st.addTimeSignature(s.num + "/" + s.den); sb.addTimeSignature(s.num + "/" + s.den); } }
-    st.setContext(ctx).draw(); if (hasL) sb.setContext(ctx).draw();
-    if (first && hasL) { new VF.StaveConnector(st, sb).setType("brace").setContext(ctx).draw(); new VF.StaveConnector(st, sb).setType("singleLeft").setContext(ctx).draw(); }
-    if (hasL) new VF.StaveConnector(st, sb).setType("singleRight").setContext(ctx).draw();
+    if (hasR) st.setContext(ctx).draw(); if (hasL) sb.setContext(ctx).draw();
+    if (first && two) { new VF.StaveConnector(st, sb).setType("brace").setContext(ctx).draw(); new VF.StaveConnector(st, sb).setType("singleLeft").setContext(ctx).draw(); }
+    if (two) new VF.StaveConnector(st, sb).setType("singleRight").setContext(ctx).draw();
     const voices = [], ties = [], beams = [];
     for (const [h, stave, clef] of [["R", st, "treble"], ["L", sb, "bass"]]) {
-      if (h === "L" && !hasL) continue;
+      if ((h === "L" && !hasL) || (h === "R" && !hasR)) continue;
       const b0 = b * s.num, b1 = b0 + s.num, ns = s.notes.filter(n => n.h === h && n.t >= b0 - .001 && n.t < b1 - .001);
       const on = [...new Set(ns.map(n => +n.t.toFixed(3)))].sort((a, c) => a - c), tick = [], tt = [];
       let tcur = b0;
@@ -423,7 +438,7 @@ async function renderScore(el, o = {}) {
     const fmt = new VF.Formatter(); voices.forEach(([v]) => fmt.joinVoices([v]));
     fmt.format(voices.map(([v]) => v), mw - (first ? 90 : 25));
     voices.forEach(([v, stv]) => v.draw(ctx, stv)); beams.forEach(b => b.setContext(ctx).draw()); ties.forEach(t => t.setContext(ctx).draw());
-    boxes.push({ x: (x + 4) * sc, y: y * sc, w: mw * sc, h: (hasL ? 200 : 100) * sc });
+    boxes.push({ x: (x + 4) * sc, y: y * sc, w: mw * sc, h: (hasL && hasR ? 200 : 100) * sc });
   }
   SC = { el, hi: el.querySelector(".schi"), boxes, last: -1 };
   if (shown < nBars) el.insertAdjacentHTML("beforeend", `<p class="small muted center">… mais ${nBars - shown} compassos. Abra em tela cheia para ver tudo.</p>`);
@@ -443,7 +458,7 @@ function openScoreViewer() {
   if (!PZ.song) return;
   closeScoreViewer();
   const v = document.createElement("div"); v.className = "scview"; v.id = "scview";
-  v.innerHTML = `<div class="scbar"><button class="iconbtn" id="svX" aria-label="Fechar">${IC.x}</button><b class="grow">${esc(PZ.song.title)}</b><button class="btn" id="svM" aria-label="Diminuir">−</button><button class="btn" id="svP" aria-label="Aumentar">+</button><button class="btn pri" id="svPlay">${IC.play}</button></div><div class="scbody"><div id="svScore"></div></div>`;
+  v.innerHTML = `<div class="scbar"><button class="iconbtn" id="svX" aria-label="Fechar">${IC.x}</button><div class="grow svt"><b>${esc(PZ.song.title)}</b><span>Tom: ${esc(songKey(PZ.song))}</span></div><button class="btn" id="svM" aria-label="Diminuir">−</button><button class="btn" id="svP" aria-label="Aumentar">+</button><button class="btn pri" id="svPlay">${IC.play}</button></div><div class="scbody"><div id="svScore"></div></div>`;
   document.body.appendChild(v); document.body.classList.add("scopen");
   if (SCV_Z == null) SCV_Z = innerWidth < 600 ? .7 : .95;
   const draw = () => renderScore($("#svScore"), { scale: SCV_Z }).then(() => { SC.follow = true; });
@@ -523,7 +538,8 @@ function viewPartitura() {
   const cur = PZ.song || SONGS[0]; if (PZ.song !== cur || !PZ.end) pzLoad(cur);
   const mine = mySongs().some(s => s.id === cur.id);
   app().innerHTML = `${pianoNav("partitura")}
-  <section class="card stack"><div class="row">${songSelect(cur)}</div><p class="small muted">${esc(cur.sub || "")}</p>
+  <section class="card stack"><div class="row">${songSelect(cur)}</div><p class="keyline">${keyLine(cur)}</p><p class="small muted">${esc(cur.sub || "")}</p>
+    ${cur.keyName && /gravação|Melodia/i.test(cur.sub + cur.title) && cur.notes.length ? `<p class="small muted">Gravação pelo microfone pega ruído: se a partitura parecer bagunçada (muitos ♯ soltos), o tom também pode estar errado. Para som limpo, use a Gravação de Tela.</p>` : ""}
     <div class="row"><button class="btn pri" id="ptFull">Abrir em tela cheia</button><a class="btn" href="#piano">Tocar com notas caindo</a>${mine ? `<button class="btn danger" id="ptDel">Apagar esta</button>` : ""}</div></section>
   <button class="card scprev" id="ptPrev" aria-label="Abrir a partitura em tela cheia"><div id="pzScore"></div><span class="scopen-tag">Toque para abrir em tela cheia ⤢</span></button>
   <p class="small muted center">Quer a partitura de outra música? Vá em <a href="#piano-tirar">Tirar música</a>: link do YouTube, áudio, vídeo ou arquivo MIDI.</p>`;

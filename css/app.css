@@ -545,3 +545,8 @@ body.scopen .tabs,body.scopen .top{display:none}
 @media (max-width:420px){.ytthumb{width:96px}}
 .warnc{background:linear-gradient(160deg,rgba(255,193,69,.22),var(--glass) 70%);border-color:rgba(255,193,69,.5)}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.keyline{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.keytag{background:var(--accent-soft);color:var(--accent);padding:5px 12px;border-radius:999px;font-size:.9rem}
+.svt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.svt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svt span{font-size:.78rem;color:#6b6258;font-weight:600}
