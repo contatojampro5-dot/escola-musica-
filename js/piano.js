@@ -420,7 +420,7 @@ function bindSongSelect(again) { $("#pzSong").onchange = e => { const s = findSo
 function viewPiano(sub) {
   sub = sub || "";
   if (sub === "leitura") return viewLeitura();
-  if (sub === "tirar") return viewTirar();
+  if (sub.startsWith("tirar")) { const q = sub.split("?yt=")[1]; return viewTirar(q ? decodeURIComponent(q) : null); }
   if (sub === "partitura") return viewPartitura();
   const cur = PZ.song || SONGS[0];
   app().innerHTML = `${pianoNav("")}
@@ -485,9 +485,13 @@ function viewPartitura() {
 // ---------- tirar música: YouTube, áudio/vídeo, MIDI, gravação ----------
 const YT = { info: null };
 function ytId(u) { const m = String(u).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(u.trim()) ? u.trim() : null); }
-function viewTirar() {
+const SITE = "https://contatojampro5-dot.github.io/escola-musica-/";
+function onSite() { return /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname); }
+function siteLink(yt) { return SITE + "#piano-tirar" + (yt ? "?yt=" + encodeURIComponent(yt) : ""); }
+function viewTirar(autoYt) {
   const y = YT.info;
   app().innerHTML = `${pianoNav("tirar")}
+  ${onSite() ? "" : `<section class="card stack warnc"><b>Você está com o Harpa aberto dentro do app do Claude.</b><p class="small">Aqui dentro a internet é bloqueada por segurança, então o YouTube e a IA não funcionam. Abra o site do Harpa (dá para colocar na tela inicial do celular):</p><a class="btn pri" href="${siteLink()}" target="_blank" rel="noopener">Abrir o site do Harpa</a></section>`}
   <section class="card stack"><p class="eyebrow">1 · Link do YouTube</p><h2>Identificar a música</h2>
     <div class="row"><input id="ytU" class="inp grow" placeholder="Cole aqui o link do YouTube" inputmode="url" value="${y ? esc(y.url) : ""}"><button class="btn pri" id="ytGo">Identificar</button></div>
     <div id="ytOut">${y ? ytCard(y) : ""}</div></section>
@@ -504,6 +508,7 @@ function viewTirar() {
   $("#trMode").querySelectorAll("button").forEach(b => b.onclick = () => { mode = b.dataset.v; $("#trMode").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); modeTxt(); });
   $("#ytGo").onclick = ytIdentify; $("#ytU").onkeydown = e => { if (e.key === "Enter") ytIdentify(); };
   if (y) bindYt();
+  if (autoYt) { $("#ytU").value = autoYt; ytIdentify(); }
   $("#trF").onchange = async e => { const f = e.target.files[0]; if (!f) return; trMsg("Lendo o arquivo…"); try { const ab = await AU.init().decodeAudioData(await f.arrayBuffer()); await trRun(ab, f.name.replace(/\.[^.]+$/, ""), mode); } catch (err) { trMsg("Não consegui ler esse arquivo. Tente MP3, M4A ou MP4."); } };
   $("#trRec").onclick = () => recordAudio(() => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } }), "gravação " + new Date().toLocaleTimeString().slice(0, 5), () => mode);
   $("#pzFile").onchange = async e => {
@@ -544,7 +549,11 @@ async function ytIdentify() {
   let title = "", author = "";
   try { const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}&format=json`); if (!r.ok) throw 0; const j = await r.json(); title = j.title; author = j.author_name; }
   catch (e) { try { const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`); const j = await r.json(); title = j.title || ""; author = j.author_name || ""; } catch (e2) {} }
-  if (!title) { out.innerHTML = `<p class="small">Não consegui identificar esse vídeo (ele pode ser privado ou a internet falhou).</p>`; return; }
+  if (!title) {
+    out.innerHTML = onSite() ? `<p class="small">Não consegui identificar esse vídeo. Ele pode ser privado, ou a internet falhou. Tente de novo.</p>`
+      : `<p class="small">Aqui dentro do app do Claude a conexão com o YouTube é bloqueada. Toque abaixo: o site do Harpa abre com o seu link e identifica sozinho.</p><a class="btn pri" href="${siteLink(u)}" target="_blank" rel="noopener">Abrir no site do Harpa</a>`;
+    return;
+  }
   YT.info = { id, url: u, title, author }; out.innerHTML = ytCard(YT.info); bindYt();
 }
 function ytClean(t) { return t.replace(/\(.*?\)|\[.*?\]|official|video|clipe|ao vivo|live|lyric[s]?|letra/gi, "").replace(/\s+/g, " ").trim(); }

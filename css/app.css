@@ -543,3 +543,4 @@ body.scopen .tabs,body.scopen .top{display:none}
 .trmsg{display:flex;flex-direction:column;gap:8px;font-size:.92rem}
 .trmsg:empty{display:none}
 @media (max-width:420px){.ytthumb{width:96px}}
+.warnc{background:linear-gradient(160deg,rgba(255,193,69,.22),var(--glass) 70%);border-color:rgba(255,193,69,.5)}
