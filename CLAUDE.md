@@ -29,7 +29,8 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   como `VF.Annotation` na pauta de cima e na lateral do canvas.
 - `js/musicas.js` (v2.8): `PIECES` convertidas da coleção do music21 (pip `music21`, `corpus.parse`) por um script Python
   (vozes de cima = mão direita, de baixo = esquerda; até ~24–40 compassos) + Para Elisa e Minueto escritos à mão. Campo `cat`
-  (hino | classica | comecar) agrupa a biblioteca. Só domínio público; letras/arranjos da Harpa Cristã são da CPAD (não usar).
+  (hino | classica | comecar) agrupa a biblioteca. v2.9: hinos só-melodia transcritos à mão do LilyPond da Wikipédia
+  (não rodar o LilyPond em arquivo baixado: pode executar código) + `withAutoBass` (baixo por compasso pelas cifras). Só domínio público; letras/arranjos da Harpa Cristã são da CPAD (não usar).
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
 ## Testar

@@ -15,3 +15,31 @@ SONGS.push(
     "D5 G4:0.5 A4:0.5 B4:0.5 C5:0.5 D5 G4 G4 E5 C5:0.5 D5:0.5 E5:0.5 F#5:0.5 G5 G4 G4 C5 D5:0.5 C5:0.5 B4:0.5 A4:0.5 B4 C5:0.5 B4:0.5 A4:0.5 G4:0.5 F#4 G4:0.5 A4:0.5 B4:0.5 G4:0.5 A4:3 D5 G4:0.5 A4:0.5 B4:0.5 C5:0.5 D5 G4 G4 E5 C5:0.5 D5:0.5 E5:0.5 F#5:0.5 G5 G4 G4 C5 D5:0.5 C5:0.5 B4:0.5 A4:0.5 B4 C5:0.5 B4:0.5 A4:0.5 G4:0.5 A4 B4:0.5 A4:0.5 G4:0.5 F#4:0.5 G4:3",
     "G3:3 B3:3 C4:3 B3:3 A3:3 G3:3 D3:3 D3:3 G3:3 B3:3 C4:3 B3:3 A3:3 G3:3 D3:3 G2:3"), { cat: "classica" })
 );
+
+// Hinos transcritos à mão das partituras de domínio público da Wikipédia (só melodia) + baixo automático pelas cifras.
+const NOTE_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function withAutoBass(s) {
+  const ch = songChords(s), end = Math.max(...s.notes.map(n => n.t + n.d));
+  ch.forEach((c, i) => {
+    let pc = NOTE_PC[c.name[0]]; if (c.name[1] === "♯") pc++; if (c.name[1] === "♭") pc--;
+    const t1 = i + 1 < ch.length ? ch[i + 1].t : end; let m = 36 + ((pc + 12) % 12); while (m < 43) m += 12;
+    for (let t = c.t; t < t1 - .01; ) { const nb = (Math.floor(t / s.num + 1e-6) + 1) * s.num, te = Math.min(t1, nb); s.notes.push({ t, d: te - t, m, h: "L" }); t = te; } // um baixo por compasso
+  });
+  s.notes.sort((a, b) => a.t - b.t || a.m - b.m); return s;
+}
+[
+  ["graca", "Graça Excelsa (Amazing Grace)", "Hino · melodia tradicional americana (New Britain, 1829) · melodia + baixo automático", 66, 3, 4, "G",
+    "-:2 D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 G4:2 E4 D4:2 D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 D5:2 B4 D5:1.5 B4:0.5 D5:0.5 B4:0.5 G4:2 D4 E4:1.5 G4:0.5 G4:0.5 E4:0.5 D4:2 D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 G4:3"],
+  ["assurance", "Que segurança, sou de Jesus", "Hino · P. Knapp (1873) · 9/8 · melodia + baixo automático", 150, 9, 8, "D",
+    "-:6 F#4 E4 D4 A4:3 A4:3 G4 A4 B4 A4:6 A4 F#4 A4 D5:3 C#5:2 C#5 B4 A4 G#4 A4:6 F#4 E4 D4 A4:3 A4:3 G4 A4 B4 A4:6 D4 E4 F#4 G4:3 E4:3 D4 E4 C#4 D4:6 A4 A4 A4 D5:3 A4:3 B4 B4 B4 A4:6 A4 A4 A4 B4:3 D5:3 C#5 C#5 B4 C#5:6 C#5 D5 E5 D5:3 A4:3 B4 A4 B4 A4:6 D4 E4 F#4 G4:3 E4:3 D4:1.5 E4:0.5 C#4 D4:6"],
+  ["santo", "Santo, Santo, Santo", "Hino · J. B. Dykes (1861) · melodia + baixo automático", 88, 4, 4, "D",
+    "D4:2 D4:2 F#4:2 F#4:2 A4:4 A4:4 B4:4 B4:2 B4:2 A4:4 F#4:4 A4:3 A4:1 A4:2 A4:2 D5:4 C#5:2 A4:2 E4:2 A4:2 B4:3 A4:1 A4:8 D4:2 D4:2 F#4:2 F#4:2 A4:4 A4:4 B4:3 B4:1 B4:2 B4:2 A4:4 A4:4 D5:4 A4:2 A4:2 B4:4 F#4:4 G4:2 E4:2 E4:3 D4:1 D4:8"],
+  ["joy", "Alegria ao mundo (Joy to the World)", "Hino · arranjo de L. Mason (1839), atribuído a Handel · melodia + baixo automático", 92, 2, 4, "D",
+    "D5 C#5:0.75 B4:0.25 A4:1.5 G4:0.5 F#4 E4 D4:1.5 A4:0.5 B4:1.5 B4:0.5 C#5:1.5 C#5:0.5 D5:3.5 D5:0.5 D5:0.5 C#5:0.5 B4:0.5 A4:0.5 A4:0.75 G4:0.25 F#4:0.5 D5:0.5 D5:0.5 C#5:0.5 B4:0.5 A4:0.5 A4:0.75 G4:0.25 F#4:0.5 F#4:0.5 F#4:0.5 F#4:0.5 F#4:0.5 F#4:0.25 G4:0.25 A4:1.5 G4:0.25 F#4:0.25 E4:0.5 E4:0.5 E4:0.5 E4:0.25 F#4:0.25 G4:1.5 F#4:0.25 E4:0.25 F#4:0.5 D5 B4:0.5 A4:0.75 G4:0.25 F#4:0.5 G4:0.5 F#4 E4 D4:2"],
+  ["adeste", "Ó vinde, fiéis (Adeste Fideles)", "Hino · J. F. Wade (c. 1743) · melodia + baixo automático", 88, 4, 4, "G",
+    "-:3 G4 G4:2 D4 G4 A4:2 D4:2 B4 A4 B4 C5 B4:2 A4 G4 G4:2 F#4 E4 F#4 G4 A4 B4 F#4:2 E4:1.5 D4:0.5 D4:4 D5:2 C5 B4 C5:2 B4:2 A4 B4 G4 A4 F#4:2 D4 G4 G4 F#4 G4 A4 G4:2 D4 B4 B4 A4 B4 C5 B4:2 A4 B4 C5 B4 A4 G4 F#4:2 G4 C5 B4:2 A4:1.5 G4:0.5 G4:4"],
+  ["doxologia", "Doxologia (Old 100th)", "Hino · Saltério de Genebra, L. Bourgeois (1551) · melodia + baixo automático", 80, 4, 4, "G",
+    "G4:2 G4 F#4 E4 D4 G4:2 A4:2 B4:2 B4:2 B4 B4 A4 G4 C5:2 B4:2 A4:2 G4:2 A4 B4 A4 G4 E4:2 F#4:2 G4:2 D5:2 B4:2 G4:2 A4 C5 B4:2 A4:2 G4:4"],
+  ["maisperto", "Mais perto quero estar", "Hino · L. Mason (1856) · melodia + baixo automático", 76, 4, 4, "F",
+    "A4:2 G4 F4 F4:1.5 D4:0.5 D4:2 C4:2 F4 A4 G4:3 -:1 A4:2 G4 F4 F4:1.5 D4:0.5 D4:2 C4 F4 E4 G4 F4:3 -:1 C5:2 D5 C5 C5:1.5 A4:0.5 C5:2 C5:2 D5 C5 C5:1.5 A4:0.5 G4:2 A4:2 G4 F4 F4:1.5 D4:0.5 D4:2 C4 F4 E4 G4 F4:4"]
+].forEach(([id, t, sub, bpm, num, den, key, rh]) => SONGS.push(withAutoBass(Object.assign(mkSong(id, t, sub, bpm, num, den, key, rh, ""), { cat: "hino" }))));

@@ -371,6 +371,7 @@ function songChords(s) {
       if (low && low.m % 12 === r) sc += tot * .3; else if (low) sc -= tot * .12;
       if (pcs.every(p => scale.includes(p))) sc += tot * .1; // acordes do tom primeiro
       if (mono && [0, 5, 7].includes((r - kr + 12) % 12) && suf === "") sc += tot * .32; // melodia sozinha: I, IV e V primeiro
+      if (mono && r === kr && suf === "") sc += tot * .1; // e o I um pouco mais
       if (!best || sc > best.sc + 1e-6) best = { sc, r, suf, pcs };
     }
     if (!best || best.sc < tot * .2) continue;
