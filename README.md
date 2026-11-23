@@ -23,6 +23,7 @@ Progresso salvo no aparelho (localStorage). `sw.js` deixa abrir sem internet dep
 `index.html` · `css/app.css` · `js/teoria.js` (teoria com grafia certa) · `js/audio.js` (motor de som Web Audio) · `js/art.js` (desenho dos mestres) · `js/base.js` (mestres, níveis, cards, guia) · `js/extras.js` (figurinhas, frases, teste) · `js/ui2.js` (telas no padrão Firmes) · `js/licoes1-3.js` (conteúdo) · `js/app.js` (telas).
 
 ## Versões
+- **v2.5**: cifras (acordes) em cima da partitura e ao lado das notas caindo, descobertas automaticamente pelas notas (músicas prontas, MIDI e as tiradas pela IA).
 - **v2.4**: som no iPhone mesmo com a chave do silencioso ligada; IA mais sensível (normaliza gravações baixas); no celular, passo a passo da Gravação de Tela para tirar a partitura de vídeos do YouTube.
 - **v2.3**: aberto dentro do app do Claude (onde o YouTube é bloqueado), o Harpa avisa e oferece abrir o site já com o link do YouTube preenchido, identificando sozinho.
 - **v2.2**: aba Piano em 4 partes (Tocar · Partitura · Tirar música · Leitura); partitura em tamanho normal que abre em tela cheia com zoom e compasso aceso; link do YouTube identifica a música (nome, canal, vídeo, busca de cifra/partitura/MIDI) e grava o som do vídeo; IA Basic Pitch (Spotify) escreve a partitura completa (acordes + melodia) de áudio ou vídeo.

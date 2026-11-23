@@ -266,6 +266,10 @@ function pzDraw() {
     if (bot - top > font + 6 && bw > font * 1.4) { x.fillStyle = "rgba(0,0,0,.55)"; x.fillText(T.midiName(n.m, PZ.flat).replace(/-?\d+$/, ""), bx + bw / 2, bot - 6); }
     if (n.t <= PZ.pos + .02 && n.t + n.d > PZ.pos && (!u || PZ.mode === "watch")) now.add(n.m);
   }
+  // cifra na lateral, na altura em que o acorde começa
+  x.textAlign = "left"; x.font = "800 15px system-ui";
+  for (const c of songChords(PZ.song)) { const y = KT - (c.t - PZ.pos) * PPB; if (y < 14 || y > KT + 2) continue; const w = x.measureText(c.name).width + 12; x.fillStyle = "rgba(255,255,255,.92)"; pzRound(x, 6, y - 20, w, 20, 6); x.fill(); x.fillStyle = "#1B1410"; x.fillText(c.name, 12, y - 5); }
+  x.textAlign = "center";
   // linha de toque
   x.fillStyle = PZ.waiting ? "#FFC145" : "rgba(255,255,255,.35)"; x.fillRect(0, KT - 2, W, 2);
   // teclado
@@ -324,6 +328,41 @@ function pzDone() {
 }
 function pzInput(m, isDown) { if (PZ.song && !PZ.playing) pzDraw(); else if (PZ.song) { /* desenhado no próximo quadro */ } }
 
+
+// ---------- acordes (cifra) a partir das notas ----------
+const CH_T = [["", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["m7", [0, 3, 7, 10]], ["7M", [0, 4, 7, 11]], ["°", [0, 3, 6]], ["m7(♭5)", [0, 3, 6, 10]]];
+const NM_S = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"], NM_F = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+function songChords(s) {
+  if (s._ch) return s._ch;
+  const step = s.den === 8 ? 3 : s.num === 3 ? 3 : 2, end = Math.max(...s.notes.map(n => n.t + n.d)), out = [];
+  const flat = !SHARP_KEYS.includes(s.key) && s.key !== "C", NM = flat ? NM_F : NM_S;
+  const kr = T.pc(T.parse((s.key || "C").replace("m", "")) || T.parse("C")), scale = [0, 2, 4, 5, 7, 9, 11].map(x => (kr + x) % 12);
+  for (let t0 = 0; t0 < end - .01; t0 += step) {
+    const t1 = t0 + step, w = new Array(12).fill(0); let tot = 0, low = null;
+    s.notes.forEach(n => { const o = Math.min(t1, n.t + n.d) - Math.max(t0, n.t); if (o <= 0) return; const k = o * (n.t >= t0 - .01 ? 1 : .7) * (n.h === "L" ? 1.6 : 1); w[n.m % 12] += k; tot += k; if (n.t < t0 + step / 2 && (!low || n.m < low.m)) low = n; });
+    if (tot < .2) continue;
+    if (low) w[low.m % 12] += tot * .25;
+    let best = null;
+    for (let r = 0; r < 12; r++) for (const [suf, iv] of CH_T) {
+      const pcs = iv.map(x => (r + x) % 12); let sc = 0;
+      for (let p = 0; p < 12; p++) sc += pcs.includes(p) ? w[p] : -.6 * w[p];
+      if (iv.length === 4 && w[pcs[3]] < tot * .18) sc -= tot * .5; // só põe a 7ª se ela soa de verdade
+      if (iv.length === 4) sc -= tot * .22;
+      if (iv[1] === 6 || iv[2] === 6) sc -= tot * .1; // diminuto só com evidência
+      if (!pcs.slice(0, 2).every(p => w[p] > 0)) sc -= tot * .2; // precisa de fundamental e 3ª (ou 4ª)
+      if (low && low.m % 12 === r) sc += tot * .3; else if (low) sc -= tot * .12;
+      if (pcs.every(p => scale.includes(p))) sc += tot * .1; // acordes do tom primeiro
+      if (!best || sc > best.sc + 1e-6) best = { sc, r, suf, pcs };
+    }
+    if (!best || best.sc < tot * .2) continue;
+    let name = NM[best.r] + best.suf;
+    if (low && low.m % 12 !== best.r && best.pcs.includes(low.m % 12)) name += "/" + NM[low.m % 12];
+    const prev = out[out.length - 1];
+    if (!prev || prev.name !== name) out.push({ t: t0, name });
+  }
+  return (s._ch = out);
+}
+
 // ---------- partitura (VexFlow, carregado só quando abre) ----------
 let VF_P = null;
 function loadVF() { if (window.Vex) return Promise.resolve(); if (VF_P) return VF_P; VF_P = new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"; s.onload = ok; s.onerror = () => { VF_P = null; no(new Error("sem internet para carregar a partitura")); }; document.head.appendChild(s); }); return VF_P; }
@@ -338,14 +377,15 @@ async function renderScore(el, o = {}) {
   const VF = Vex.Flow, flat = !SHARP_KEYS.includes(s.key) && s.key !== "C" && s.key !== "Am";
   PZ.flat = flat;
   const qPerBeat = 4 / s.den, barQ = s.num * qPerBeat, nBars = Math.ceil(PZ.end / s.num);
+  const chords = o.noChords ? [] : songChords(s), hasR = s.notes.some(n => n.h === "R");
   const hasL = s.notes.some(n => n.h === "L"), shown = Math.min(nBars, o.maxBars || nBars);
   const W = Math.max(280, el.clientWidth - 8), sc = o.scale || (W < 600 ? .62 : .8), LW = W / sc;
-  const per = Math.max(1, Math.min(4, Math.floor((LW - 20) / 250))), mw = (LW - 20) / per, sysH = hasL ? 230 : 130, rows = Math.ceil(shown / per);
+  const per = Math.max(1, Math.min(4, Math.floor((LW - 20) / 250))), mw = (LW - 20) / per, sysH = hasL ? 250 : 150, rows = Math.ceil(shown / per);
   el.innerHTML = `<div class="scwrap"><div class="schi"></div><div class="scv"></div></div>`;
   const R = new VF.Renderer(el.querySelector(".scv"), VF.Renderer.Backends.SVG); R.resize(W, (rows * sysH + 20) * sc); const ctx = R.getContext(); ctx.scale(sc, sc);
   const boxes = [];
   for (let b = 0; b < shown; b++) {
-    const row = Math.floor(b / per), col = b % per, x = 10 + col * mw, y = 10 + row * sysH, first = col === 0;
+    const row = Math.floor(b / per), col = b % per, x = 10 + col * mw, y = 30 + row * sysH, first = col === 0;
     const st = new VF.Stave(x, y, mw), sb = new VF.Stave(x, y + 110, mw);
     if (first) { st.addClef("treble").addKeySignature(s.key.replace("m", "")); sb.addClef("bass").addKeySignature(s.key.replace("m", "")); if (b === 0) { st.addTimeSignature(s.num + "/" + s.den); sb.addTimeSignature(s.num + "/" + s.den); } }
     st.setContext(ctx).draw(); if (hasL) sb.setContext(ctx).draw();
@@ -355,18 +395,25 @@ async function renderScore(el, o = {}) {
     for (const [h, stave, clef] of [["R", st, "treble"], ["L", sb, "bass"]]) {
       if (h === "L" && !hasL) continue;
       const b0 = b * s.num, b1 = b0 + s.num, ns = s.notes.filter(n => n.h === h && n.t >= b0 - .001 && n.t < b1 - .001);
-      const on = [...new Set(ns.map(n => +n.t.toFixed(3)))].sort((a, c) => a - c), tick = [];
+      const on = [...new Set(ns.map(n => +n.t.toFixed(3)))].sort((a, c) => a - c), tick = [], tt = [];
+      let tcur = b0;
       let cur = b0;
-      const rest = (len) => splitDur(len * qPerBeat).forEach(([, d]) => { const r = new VF.StaveNote({ clef, keys: [clef === "bass" ? "d/3" : "b/4"], duration: d + "r" }); if (d.includes("d")) VF.Dot.buildAndAttach([r], { all: true }); tick.push(r); });
+      const rest = (len) => splitDur(len * qPerBeat).forEach(([, d]) => { const r = new VF.StaveNote({ clef, keys: [clef === "bass" ? "d/3" : "b/4"], duration: d + "r" }); if (d.includes("d")) VF.Dot.buildAndAttach([r], { all: true }); tick.push(r); tt.push(tcur); tcur += DUR.find(x => x[1] === d)[0] / qPerBeat; });
       on.forEach((t, i) => {
         if (t > cur + .001) rest(t - cur);
+        tcur = t;
         const grp = ns.filter(n => Math.abs(n.t - t) < .002), nxt = i + 1 < on.length ? on[i + 1] : b1;
         const len = Math.min(Math.min(...grp.map(n => n.d)), nxt - t, b1 - t), keys = [...new Set(grp.map(n => n.m))].sort((a, c) => a - c).map(m => vfKey(m, flat));
         let prevN = null;
-        splitDur(len * qPerBeat).forEach(([, d]) => { const sn = new VF.StaveNote({ clef, keys, duration: d, auto_stem: true }); if (d.includes("d")) VF.Dot.buildAndAttach([sn], { all: true }); if (prevN) ties.push(new VF.StaveTie({ first_note: prevN, last_note: sn, first_indices: keys.map((_, k) => k), last_indices: keys.map((_, k) => k) })); prevN = sn; tick.push(sn); });
+        splitDur(len * qPerBeat).forEach(([, d]) => { const sn = new VF.StaveNote({ clef, keys, duration: d, auto_stem: true }); if (d.includes("d")) VF.Dot.buildAndAttach([sn], { all: true }); if (prevN) ties.push(new VF.StaveTie({ first_note: prevN, last_note: sn, first_indices: keys.map((_, k) => k), last_indices: keys.map((_, k) => k) })); prevN = sn; tick.push(sn); tt.push(tcur); tcur += DUR.find(x => x[1] === d)[0] / qPerBeat; });
         cur = t + len;
       });
       if (b1 > cur + .001) rest(b1 - cur);
+      if (h === "R" || !hasR) chords.filter(c => c.t >= b0 - .01 && c.t < b1 - .01).forEach(c => {
+        let i = tt.findIndex(x => x >= c.t - .01); if (i < 0) i = tt.length - 1; if (i < 0) return;
+        const a = new VF.Annotation(c.name).setFont("Arial", 15, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP);
+        tick[i].addModifier(a, 0);
+      });
       const v = new VF.Voice({ num_beats: s.num, beat_value: s.den }).setMode(VF.Voice.Mode.SOFT).addTickables(tick);
       VF.Accidental.applyAccidentals([v], s.key.replace("m", ""));
       const bm = VF.Beam.generateBeams(tick.filter(n => !n.isRest()), s.den === 8 ? { groups: [new VF.Fraction(3, 8)] } : {});
