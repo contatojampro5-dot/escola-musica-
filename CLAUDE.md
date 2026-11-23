@@ -19,7 +19,10 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
 - `js/piano.js` aba Piano (v2.1): notas caindo no canvas (`PZ`, modos esperar/tocar junto/assistir), entrada `INP`
   (Web MIDI para o teclado USB, toque, microfone `MIC` com YIN), músicas prontas `SONGS` (domínio público, `mkSong`),
   leitor de MIDI `parseMidi`, partitura com VexFlow 4.2.2 do jsdelivr (carregado só ao abrir), `transcribeBuffer`
-  (melodia de áudio/vídeo, uma nota por vez) e treino de leitura (`#piano-leitura`). Minhas músicas em localStorage `harpa.songs`.
+  (melodia de áudio/vídeo, uma nota por vez) e treino de leitura (`#piano-leitura`).
+  v2.2: sub-rotas `#piano` (tocar), `#piano-partitura` (prévia 8 compassos + `openScoreViewer` tela cheia), `#piano-tirar`
+  (YouTube via oEmbed `ytIdentify` + gravação do som da aba `getDisplayMedia`/microfone `recordAudio`; arquivo → `trRun`),
+  `#piano-leitura`. IA polifônica: Basic Pitch 1.0.1 por `import(jsdelivr/+esm)` (`transcribePoly`), saída em `notesToSong`. Minhas músicas em localStorage `harpa.songs`.
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
 ## Testar

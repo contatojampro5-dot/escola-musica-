@@ -23,6 +23,7 @@ Progresso salvo no aparelho (localStorage). `sw.js` deixa abrir sem internet dep
 `index.html` · `css/app.css` · `js/teoria.js` (teoria com grafia certa) · `js/audio.js` (motor de som Web Audio) · `js/art.js` (desenho dos mestres) · `js/base.js` (mestres, níveis, cards, guia) · `js/extras.js` (figurinhas, frases, teste) · `js/ui2.js` (telas no padrão Firmes) · `js/licoes1-3.js` (conteúdo) · `js/app.js` (telas).
 
 ## Versões
+- **v2.2**: aba Piano em 4 partes (Tocar · Partitura · Tirar música · Leitura); partitura em tamanho normal que abre em tela cheia com zoom e compasso aceso; link do YouTube identifica a música (nome, canal, vídeo, busca de cifra/partitura/MIDI) e grava o som do vídeo; IA Basic Pitch (Spotify) escreve a partitura completa (acordes + melodia) de áudio ou vídeo.
 - **v2.1**: aba **Piano** (ideia do anúncio do TeclaTreino): notas caindo com modo Esperar, teclado USB-MIDI, microfone, 6 músicas prontas, abrir MIDI, partitura, tirar melodia de áudio/vídeo e treino de leitura.
 - **v2**: visual e fluxo no padrão do Firmes (boas-vindas, início, trilha em caminho, stories em tela cheia, mestres desenhados, álbum, teste vocacional).
 - **v1**: primeira versão (28 lições, academia de ouvido, laboratório).
