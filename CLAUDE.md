@@ -27,6 +27,9 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   (roteador `viewPiano`, `#piano-tirar` antigo vai para youtube); escolha IA/melodia em `TR_MODE` (`modeSeg`).
   v2.5: cifras automáticas `songChords(s)` (janela de meio compasso, peso no baixo, acordes do tom primeiro), desenhadas
   como `VF.Annotation` na pauta de cima e na lateral do canvas.
+- `js/musicas.js` (v2.8): `PIECES` convertidas da coleção do music21 (pip `music21`, `corpus.parse`) por um script Python
+  (vozes de cima = mão direita, de baixo = esquerda; até ~24–40 compassos) + Para Elisa e Minueto escritos à mão. Campo `cat`
+  (hino | classica | comecar) agrupa a biblioteca. Só domínio público; letras/arranjos da Harpa Cristã são da CPAD (não usar).
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
 ## Testar

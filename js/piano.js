@@ -29,6 +29,7 @@ const SONGS = [
     "F#5:2 E5:2 D5:2 C#5:2 B4:2 A4:2 B4:2 C#5:2 D5:2 C#5:2 B4:2 A4:2 G4:2 F#4:2 G4:2 E4:2",
     "D3:2 A2:2 B2:2 F#2:2 G2:2 D2:2 G2:2 A2:2 D3:2 A2:2 B2:2 F#2:2 G2:2 D2:2 G2:2 A2:2")
 ];
+[["brilha", "comecar"], ["cristo", "hino"], ["parabens", "comecar"], ["ode", "classica"], ["noite", "hino"], ["canon", "classica"]].forEach(([id, c]) => { const x = SONGS.find(s => s.id === id); if (x) x.cat = c; });
 const PZK = "harpa.songs";
 function mySongs() { try { return JSON.parse(localStorage.getItem(PZK) || "[]"); } catch (e) { return []; } }
 function saveMySongs(a) { try { localStorage.setItem(PZK, JSON.stringify(a.slice(-20))); return true; } catch (e) { toast("Sem espaço para salvar"); return false; } }
@@ -345,14 +346,16 @@ const CH_T = [["", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["m7", [0
 const NM_S = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"], NM_F = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 function songChords(s) {
   if (s._ch) return s._ch;
+  const hasBoth = new Set(s.notes.map(n => n.h)).size === 2;
   const mono = new Set(s.notes.map(n => n.h)).size === 1 && !s.notes.some((n, i) => i && Math.abs(n.t - s.notes[i - 1].t) < .01);
   const step = mono ? s.num : s.den === 8 ? 3 : s.num === 3 ? 3 : 2, end = Math.max(...s.notes.map(n => n.t + n.d)), out = [];
   const flat = !SHARP_KEYS.includes(s.key) && s.key !== "C", NM = flat ? NM_F : NM_S;
   const kr = T.pc(T.parse((s.key || "C").replace("m", "")) || T.parse("C")), scale = [0, 2, 4, 5, 7, 9, 11].map(x => (kr + x) % 12);
   for (let t0 = 0; t0 < end - .01; t0 += step) {
     const t1 = t0 + step, w = new Array(12).fill(0); let tot = 0, low = null;
-    s.notes.forEach(n => { const o = Math.min(t1, n.t + n.d) - Math.max(t0, n.t); if (o <= 0) return; const strong = Math.abs(n.t % (s.den === 8 ? 3 : 2)) < .01, k = o * (n.t >= t0 - .01 ? 1 : .7) * (n.h === "L" && !mono ? 1.6 : 1) * (mono && strong ? 1.5 : 1); w[n.m % 12] += k; tot += k; if (n.t < t0 + step / 2 && (!low || n.m < low.m)) low = n; });
+    s.notes.forEach(n => { const o = Math.min(t1, n.t + n.d) - Math.max(t0, n.t); if (o <= 0) return; const strong = Math.abs(n.t % (s.den === 8 ? 3 : 2)) < .01, k = o * (n.t >= t0 - .01 ? 1 : .7) * (n.h === "L" && !mono ? 1.6 : 1) * (mono && strong ? 1.5 : 1); w[n.m % 12] += k; tot += k; if (n.t < t0 + step / 2 && Math.min(t1, n.t + n.d) - Math.max(t0, n.t) >= step * .45 && (!low || n.m < low.m)) low = n; });
     if (tot < .2) continue;
+    if (hasBoth && !s.notes.some(n => n.h === "L" && n.t < t1 && n.t + n.d > t0)) continue; // sem acompanhamento: não inventa cifra
     if (mono) low = null; // melodia sozinha: não há baixo de verdade
     if (low) w[low.m % 12] += tot * .25;
     let best = null;
@@ -360,7 +363,8 @@ function songChords(s) {
       if (mono && (iv.length === 4 || suf === "°")) continue;
       const pcs = iv.map(x => (r + x) % 12); let sc = 0;
       for (let p = 0; p < 12; p++) sc += pcs.includes(p) ? w[p] : -.6 * w[p];
-      if (iv.length === 4 && w[pcs[3]] < tot * .18) sc -= tot * .5; // só põe a 7ª se ela soa de verdade
+      if (iv.length === 4 && w[pcs[3]] < tot * (suf === "7M" ? .32 : .22)) sc -= tot * .5; // só põe a 7ª se ela soa de verdade
+      if (suf === "7M") sc -= tot * .12;
       if (iv.length === 4) sc -= tot * .22;
       if (iv[1] === 6 || iv[2] === 6) sc -= tot * .1; // diminuto só com evidência
       if (!pcs.slice(0, 2).every(p => w[p] > 0)) sc -= tot * .2; // precisa de fundamental e 3ª (ou 4ª)
@@ -504,7 +508,7 @@ function viewMusicas() {
   <div class="row"><a class="btn" href="#piano-youtube">+ Do YouTube</a><a class="btn" href="#piano-arquivo">+ Subir áudio/vídeo</a><a class="btn" href="#piano-gravar">+ Gravar</a></div>
   <h2 class="sec">Tiradas por você</h2>
   ${mine.length ? `<div class="stack">${mine.map(s => card(s, true)).join("")}</div>` : `<p class="small muted">Ainda nenhuma. Tire a partitura de um vídeo do YouTube, de um áudio ou de uma gravação.</p>`}
-  <h2 class="sec">Músicas prontas</h2><div class="stack">${SONGS.map(s => card(s, false)).join("")}</div>`;
+  ${[["hino", "Hinos"], ["classica", "Música clássica"], ["comecar", "Para começar"]].map(([c, t]) => `<h2 class="sec">${t}</h2><div class="stack">${SONGS.filter(x => (x.cat || "comecar") === c).map(x => card(x, false)).join("")}</div>`).join("")}`;
   const use = id => { const s = findSong(id); if (s) { PZ.song = s; pzLoad(s); } return s; };
   app().querySelectorAll("[data-play]").forEach(b => b.onclick = () => { if (use(b.dataset.play)) location.hash = "#piano-tocar"; });
   app().querySelectorAll("[data-score]").forEach(b => b.onclick = () => { if (use(b.dataset.score)) location.hash = "#piano-partitura"; });
