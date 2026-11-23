@@ -2,7 +2,19 @@
 "use strict";
 const AU = {
   ctx: null, master: null, bus: null, waves: {}, pink: null, timers: [],
+  // iPhone: sem isto o som some com a chave do silencioso ligada
+  unlockIOS() {
+    if (this._ul) return; this._ul = true;
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    try {
+      const n = 4410, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+      w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 44100, true); v.setUint32(28, 88200, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+      const a = new Audio(URL.createObjectURL(new Blob([b], { type: "audio/wav" }))); a.loop = true; a.setAttribute("playsinline", ""); a.play().catch(() => { this._ul = false; }); this._sil = a;
+    } catch (e) {}
+  },
   init() {
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) this.unlockIOS();
     if (!this.ctx) {
       const C = window.AudioContext || window.webkitAudioContext;
       this.ctx = new C();

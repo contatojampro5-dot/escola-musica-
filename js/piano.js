@@ -201,9 +201,13 @@ async function transcribePoly(ab, onProg) {
   const len = Math.min(ab.duration, 240), oc = new OfflineAudioContext(1, Math.ceil(len * 22050), 22050);
   const src = oc.createBufferSource(); src.buffer = ab; src.connect(oc.destination); src.start(0);
   const rb = await oc.startRendering(), fr = [], on = [], co = [];
-  await bp.evaluateModel(rb, (f, o, c) => { fr.push(...f); on.push(...o); co.push(...c); }, p => onProg(p));
-  const ev = m.noteFramesToTime(m.addPitchBendsToNoteEvents(co, m.outputToNotesPoly(fr, on, .5, .3, 11)));
-  let ns = ev.filter(n => n.durationSeconds >= .06 && n.amplitude > .25 && n.pitchMidi >= 28 && n.pitchMidi <= 96).map(n => ({ s: n.startTimeSeconds, e: n.startTimeSeconds + n.durationSeconds, m: n.pitchMidi, a: n.amplitude }));
+  // gravações baixas (microfone): normaliza o volume antes da IA
+  const x = rb.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i]));
+  if (pk < .0005) return null;
+  const g = .95 / pk, y = new Float32Array(x.length); for (let i = 0; i < x.length; i++) y[i] = x[i] * g;
+  await bp.evaluateModel(y, (f, o, c) => { fr.push(...f); on.push(...o); co.push(...c); }, p => onProg(p));
+  const ev = m.noteFramesToTime(m.addPitchBendsToNoteEvents(co, m.outputToNotesPoly(fr, on, .45, .28, 11)));
+  let ns = ev.filter(n => n.durationSeconds >= .06 && n.amplitude > .15 && n.pitchMidi >= 28 && n.pitchMidi <= 96).map(n => ({ s: n.startTimeSeconds, e: n.startTimeSeconds + n.durationSeconds, m: n.pitchMidi, a: n.amplitude }));
   // tira "notas fantasma": harmônicos (8ª, 12ª, 15ª acima) bem mais fracos que a nota de verdade
   ns = ns.filter(n => !ns.some(o => o !== n && [12, 19, 24].includes(n.m - o.m) && Math.abs(o.s - n.s) < .06 && o.a >= n.a * 1.4));
   if (ns.length < 3) return null;
@@ -485,7 +489,7 @@ function viewPartitura() {
 // ---------- tirar música: YouTube, áudio/vídeo, MIDI, gravação ----------
 const YT = { info: null };
 function ytId(u) { const m = String(u).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(u.trim()) ? u.trim() : null); }
-const SITE = "https://contatojampro5-dot.github.io/escola-musica-/";
+const SITE = "https://contatojampro5-dot.github.io/escola-musica-/", IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 function onSite() { return /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname); }
 function siteLink(yt) { return SITE + "#piano-tirar" + (yt ? "?yt=" + encodeURIComponent(yt) : ""); }
 function viewTirar(autoYt) {
@@ -524,8 +528,8 @@ async function trRun(ab, name, mode) {
     if (mode === "poly") { trMsg("Carregando a IA (só na primeira vez)…", 0); r = await transcribePoly(ab, p => trMsg(`A IA está ouvindo a música… ${Math.round(p * 100)}%`, p)); }
     else r = await transcribeBuffer(ab, p => trMsg(`Ouvindo a melodia… ${Math.round(p * 100)}%`, p));
   } catch (e) { trMsg(mode === "poly" ? "Não consegui carregar a IA (precisa de internet). Tente o modo <b>Só a melodia</b>." : "Deu um erro ao processar o áudio."); return; }
-  if (!r || r.notes.length < 3) { trMsg("Não encontrei notas claras nesse áudio. Tente um trecho com menos ruído."); return; }
-  const s = Object.assign({ id: "u" + Date.now(), title: name, sub: `${mode === "poly" ? "Tirada pela IA" : "Melodia tirada do áudio"} · tom provável ${r.keyName} · ~${r.bpm} BPM · ${r.notes.length} notas` }, r);
+  if (!r || r.notes.length < 3) { trMsg(`Não encontrei notas claras em ${Math.round(ab.duration)} s de áudio. O som estava muito baixo ou com muito ruído. ${IOS ? "No iPhone, use a <b>Gravação de Tela</b> (veja os passos no item 1)." : "Tente de novo com o som mais alto."}`); return; }
+  const s = Object.assign({ id: "u" + Date.now(), title: name, sub: `${mode === "poly" ? "Tirada pela IA" : "Melodia tirada do áudio"} de ${Math.round(ab.duration)} s · tom provável ${r.keyName} · ~${r.bpm} BPM · ${r.notes.length} notas` }, r);
   const a = mySongs(); a.push(s); saveMySongs(a); PZ.song = s; PZ.hand = mode === "poly" ? "both" : "R"; pzLoad(s);
   toast("Partitura pronta!"); location.hash = "#piano-partitura";
 }
@@ -533,12 +537,13 @@ async function trRun(ab, name, mode) {
 let REC = null;
 async function recordAudio(getStream, name, getMode) {
   if (REC) { REC.stop(); return; }
+  try { if (navigator.audioSession) navigator.audioSession.type = "play-and-record"; } catch (e) {}
   let st; try { st = await getStream(); } catch (e) { trMsg("Sem permissão para gravar."); return; }
   const au = st.getAudioTracks(); if (!au.length) { st.getTracks().forEach(t => t.stop()); trMsg("Nenhum som foi compartilhado. Na janela do navegador, escolha <b>esta aba</b> e marque <b>Compartilhar áudio da guia</b>."); return; }
   const rec = new MediaRecorder(new MediaStream(au)), ch = []; rec.ondataavailable = e => ch.push(e.data);
   let sec = 0; const iv = setInterval(() => { sec++; trMsg(`🔴 Gravando… ${sec} s. Toque em <b>Parar e escrever a partitura</b> quando a música acabar.`); if (sec >= 240) REC.stop(); }, 1000);
   REC = { stop: () => { clearInterval(iv); if (rec.state !== "inactive") rec.stop(); } };
-  rec.onstop = async () => { st.getTracks().forEach(t => t.stop()); REC = null; document.querySelectorAll(".recbtn").forEach(b => b.textContent = b.dataset.t); if (sec < 3) { trMsg("Gravação curta demais."); return; } trMsg("Processando…"); try { const ab = await AU.init().decodeAudioData(await new Blob(ch).arrayBuffer()); await trRun(ab, name, getMode()); } catch (e) { trMsg("Não consegui processar a gravação."); } };
+  rec.onstop = async () => { st.getTracks().forEach(t => t.stop()); REC = null; try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {} document.querySelectorAll(".recbtn").forEach(b => b.textContent = b.dataset.t); if (sec < 3) { trMsg("Gravação curta demais."); return; } trMsg("Processando…"); try { const ab = await AU.init().decodeAudioData(await new Blob(ch).arrayBuffer()); await trRun(ab, name, getMode()); } catch (e) { trMsg("Não consegui processar a gravação."); } };
   rec.start(); trMsg("🔴 Gravando…");
   document.querySelectorAll(".recbtn").forEach(b => { b.dataset.t = b.dataset.t || b.textContent; b.textContent = "Parar e escrever a partitura"; });
 }
@@ -563,8 +568,9 @@ function ytCard(y) {
   <div class="row"><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}+cifra">Buscar cifra</a><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}+partitura+piano">Buscar partitura pronta</a><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}+midi">Buscar MIDI</a></div>
   <div class="ytframe"><iframe src="https://www.youtube-nocookie.com/embed/${y.id}" title="${esc(y.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
   <p class="eyebrow">Escrever a partitura deste vídeo</p>
-  <p class="small muted">O YouTube não deixa nenhum app baixar o som direto. Então o Harpa <b>escuta</b> o vídeo tocando: ${desk ? "toque em <b>Gravar o som desta aba</b>, escolha <b>esta aba</b>, marque <b>Compartilhar áudio</b> e dê play no vídeo acima." : "no celular, toque em <b>Gravar pelo microfone</b>, dê play no vídeo acima em volume bom e deixe tocar."}</p>
-  <div class="row">${desk ? `<button class="btn pri recbtn" id="ytTab">Gravar o som desta aba</button>` : ""}<button class="btn ${desk ? "" : "pri"} recbtn" id="ytMic">Gravar pelo microfone</button></div>`;
+  <p class="small muted">O YouTube não deixa nenhum app baixar o som direto. ${desk ? "Então o Harpa <b>escuta</b> o vídeo tocando: toque em <b>Gravar o som desta aba</b>, escolha <b>esta aba</b>, marque <b>Compartilhar áudio</b> e dê play no vídeo acima." : ""}</p>
+  ${desk ? "" : `<div class="tips stack"><p class="small"><b>No celular, o melhor jeito (som perfeito):</b></p><ol class="small steps"><li>Abra a <b>Central de Controle</b> (deslize do canto de cima, à direita) e toque em <b>Gravar Tela</b> ⏺.</li><li>Volte aqui e dê play no vídeo acima até o fim do trecho que você quer.</li><li>Pare a gravação (barra vermelha lá em cima).</li><li>Em <b>2 · Subir a música</b>, toque em <b>Escolher arquivo</b> e escolha o vídeo gravado.</li></ol><p class="small muted">Gravar pelo microfone do mesmo celular quase não funciona: o iPhone abaixa o próprio som enquanto o microfone grava. Pelo microfone, toque o vídeo em <b>outro aparelho</b> (TV, PC, outro celular).</p></div>`}
+  <div class="row">${desk ? `<button class="btn pri recbtn" id="ytTab">Gravar o som desta aba</button>` : ""}<button class="btn recbtn" id="ytMic">Gravar pelo microfone</button></div>`;
 }
 function bindYt() {
   const y = YT.info, mode = () => { const b = document.querySelector('#trMode [aria-pressed="true"]'); return b ? b.dataset.v : "poly"; };

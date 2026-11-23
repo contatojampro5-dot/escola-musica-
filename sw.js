@@ -1,6 +1,6 @@
 // Service worker da Escola Harpa: deixa o app abrir mesmo sem internet.
 // Ao mudar os arquivos básicos, aumente a versão para limpar o cache antigo.
-const VERSAO = 'harpa-v5';
+const VERSAO = 'harpa-v6';
 const BASICOS = [
   './',
   './index.html',
