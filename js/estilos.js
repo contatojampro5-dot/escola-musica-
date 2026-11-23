@@ -41,14 +41,14 @@ const bassOf = pc => { let m = 36 + pc; while (m < 40) m += 12; return m; };
 
 const STYLES = {
   balada: { bpm: 72, n: "Balada / Louvor", ic: "🕊", d: "O acompanhamento dos louvores lentos: baixo firme no 1 e no 3 e acordes abertos com 9ª, segurando o som.", como: ["Mão esquerda: fundamental no tempo 1 e a 5ª (ou a fundamental) no tempo 3.", "Mão direita: acorde com a 9ª (add9) segurado, renovando no tempo 3.", "Deixe o pedal ligar os acordes; troque o pedal junto com o acorde.", "Dinâmica conta tudo: verso suave, refrão mais cheio."] },
-  gospel: { bpm: 76, n: "Gospel americano", ic: "🙌", d: "O som das igrejas negras americanas: acordes com 7ª e 9ª, baixo que caminha até o próximo acorde e o “deslize” de meio tom antes de cada acorde.", como: ["Acordes ricos: add9 no I, 7(9) na dominante, m7(9) nos menores.", "Baixo caminhando: nos últimos tempos do compasso, suba ou desça por graus até a fundamental do próximo acorde (walk-up).", "Deslize cromático: toque o acorde meio tom acima (ou abaixo) numa semicolcheia antes de cair no acorde certo.", "Ritmo com balanço (shuffle): pense em tercinas, “dum-da dum-da”.", "Clássicos do estilo: IV/V no lugar do V, 2–5–1 e o diminuto de passagem."] },
+  gospel: { bpm: 76, n: "Gospel americano", ic: "🙌", d: "O som das igrejas negras americanas: acordes com 7ª e 9ª, baixo que caminha até o próximo acorde e o “deslize” de meio tom antes de cada acorde.", como: ["Acordes ricos: add9 no I, 7(9) na dominante, m7(9) nos menores.", "I7 antes do IV: em Dó, C → C7 → F. O C7 “puxa” para o F e soa igreja na hora.", "IV/V antes do V: em Dó, F/G → G7. O acorde do IV com o baixo do V dá aquele som suspenso.", "Baixo caminhando: nos últimos tempos do compasso, suba ou desça por graus até a fundamental do próximo acorde (walk-up).", "Deslize cromático: toque o acorde meio tom acima (ou abaixo) numa semicolcheia antes de cair no acorde certo.", "Ritmo com balanço (shuffle): pense em tercinas, “dum-da dum-da”.", "Clássicos do estilo: IV/V no lugar do V, 2–5–1 e o diminuto de passagem."] },
   groove: { bpm: 90, n: "Groove (R&B / soul)", ic: "🎧", d: "Acordes curtos e sincopados em semicolcheias, com 7M(9), m9 e 9; o baixo responde à bateria.", como: ["Ataques curtos (staccato) fora do tempo: 1, o “a” do 1, o “e” do 2, o 3 e o “e” do 4.", "Acordes sem a 5ª e com 9ª: m9, 7M(9), 9.", "Baixo sincopado: fundamental no 1, oitava no “e” do 2, 5ª no 3 e meio.", "Menos é mais: o silêncio entre os ataques é o que dá o groove."] },
   bossa: { bpm: 126, n: "Bossa nova", ic: "🌴", d: "A batida de João Gilberto: baixo alternando fundamental e 5ª, acordes 7M e m7 em síncope.", como: ["Baixo no 1 e no 3: fundamental e depois a 5ª, como o polegar do violão.", "Acordes com 7M, m7 e 7(9), na região do meio.", "Batida sincopada: os acordes caem antes do tempo, “empurrando” o próximo compasso.", "Toque leve: bossa é intimidade, pouco volume."] },
   baiao: { bpm: 112, n: "Baião / forró", ic: "🪗", d: "O ritmo de Luiz Gonzaga: baixo no 3 + 3 + 2 (tresillo) e acordes com 7ª no contratempo.", como: ["Baixo: fundamental no 1, de novo no “a” do 1 e a 5ª no 2 (a figura da zabumba).", "Acordes no contratempo (o “e”), curtos, como o triângulo.", "Use acordes com 7ª (mixolídio): é o tempero nordestino.", "Também funciona em louvores alegres (xote, baião gospel)."] },
   hino: { bpm: 84, n: "Hino tradicional", ic: "⛪", d: "O jeito do hinário: acordes cheios a cada tempo forte, baixo e vozes andando juntos, como um coral.", como: ["Acorde completo (fundamental, 3ª, 5ª) a cada tempo forte.", "Baixo na fundamental, com inversões para andar por graus.", "Toque ligado (legato), sem enfeites: quem enfeita é a congregação cantando.", "No fim, a cadência plagal (IV → I) para o “Amém”."] },
   arpejo: { bpm: 70, n: "Arpejo (piano solo)", ic: "🎹", d: "Os acordes desmanchados em colcheias: fundamental, 5ª, oitava, 9ª, 3ª… Bonito para introduções e momentos de oração.", como: ["Mão esquerda abre o acorde: 1 – 5 – 8 – 9 – 10, subindo e descendo.", "Mantenha o pedal durante o acorde e troque quando o acorde mudar.", "Comece devagar e deixe soar: o arpejo vive da ressonância.", "Varie: suba numa frase, desça na outra."] }
 };
-const STYLE_KEYS = Object.keys(STYLES);
+const STYLE_KEYS = ["balada", "gospel", "groove"]; // estilos mostrados (decisão do Theo: focar nesses três)
 
 // gerador "humano": pedal, dinâmica, balanço, antecipações, viradas no fim das frases
 function rngOf(seed) { let a = 0; for (const ch of String(seed)) a = (a * 31 + ch.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -104,11 +104,17 @@ function styledSong(base, style) {
         at(0, 1, [B, B + 12], .82, 1.5); at(0, 1, V, .7, 1);
         at(1.5, .5, V, .48, .35); at(1.5, .25, [B], .38, .3); // contratempo com balanço
         if (len >= 4) {
-          at(2, 1, V, .6, .9);
-          if (chg && bassOf(nx.c.bass) !== B) { const tgt = bassOf(nx.c.bass), dir = tgt > B ? 1 : -1; at(2, 1, [Math.abs(tgt - B) > 3 ? B + dir * 2 : B], .62, 1); at(3, 1, [tgt - dir], .66, 1); nx.slide = true; }
+          // marcas do gospel na 2ª metade do compasso: I7 antes do IV e IV/V antes do V
+          let V2 = V, tag = "";
+          if (chg && !p.c.minor && (nx.c.root - p.c.root + 12) % 12 === 5) { V2 = voiceNear([4, 10, 14].map(x => (p.c.root + x) % 12), p.V.ctr).ms; tag = NMS[p.c.root] + "7"; }
+          else if (chg && nx.dom && (nx.c.root - p.c.root + 12) % 12 !== 0) { const IV = (nx.c.root + 10) % 12; V2 = voiceNear([0, 4, 7].map(x => (IV + x) % 12), p.V.ctr).ms; tag = NMS[IV] + "/" + NMS[nx.c.root]; }
+          if (tag) names.push({ t: T0 + 2, name: tag });
+          at(2, 1, V2, .6, .9);
+          if (tag.includes("/")) { at(2, 2, [bassOf(nx.c.root)], .64, 2); }
+          else if (chg && bassOf(nx.c.bass) !== B) { const tgt = bassOf(nx.c.bass), dir = tgt > B ? 1 : -1; at(2, 1, [Math.abs(tgt - B) > 3 ? B + dir * 2 : B], .62, 1); at(3, 1, [tgt - dir], .66, 1); nx.slide = true; }
           else at(2, 2, [F], .6, 2);
           if (phraseEnd) { const top = Math.max(...V); [top + 2, top, top - 3].forEach((m, k) => at(3 + k / 3, 1 / 3, [m], .5 - k * .04, 1 / 3)); } // corrida em tercinas
-          else at(3, .5, V, .45, .4);
+          else at(3, .5, V2, .45, .4);
         }
         if (p.slide) p.V.ms.forEach(m => add(T0 - 1 / 6, 1 / 6, m + 1, .42, 1 / 6)); // deslize de meio tom antes do acorde
         break;
@@ -146,13 +152,13 @@ function styledSong(base, style) {
     }
   });
   out.sort((a, b) => a.t - b.t || a.m - b.m);
-  return Object.assign({}, base, { id: base.id + "~" + style, title: base.title + " · " + STYLES[style].n, notes: out, base, style, _ch: names, bpm: base.id === "demo" ? STYLES[style].bpm : base.bpm });
+  return Object.assign({}, base, { id: base.id + "~" + style, title: base.title + " · " + STYLES[style].n, notes: out, base, style, _ch: names.sort((a, b) => a.t - b.t), bpm: base.id === "demo" ? STYLES[style].bpm : base.bpm });
 }
 
 // tela "Estilos de toque"
 const DEMO = { id: "demo", title: "Progressão I–V–vi–IV", sub: "Dó maior", bpm: 84, num: 4, den: 4, key: "C", notes: [{ t: 0, d: .01, m: 0, h: "X" }], _ch: [{ t: 0, name: "C" }, { t: 4, name: "G" }, { t: 8, name: "Am" }, { t: 12, name: "F" }, { t: 16, name: "C" }, { t: 20, name: "G" }, { t: 24, name: "Am" }, { t: 28, name: "F" }, { t: 32, name: "C" }] };
 function viewEstilos() {
-  app().innerHTML = `${subHead("Estilos de toque", "O mesmo louvor pode virar balada, gospel, groove ou bossa. Um estilo é feito de ritmo, montagem dos acordes, movimento do baixo e enfeites.")}
+  app().innerHTML = `${subHead("Estilos de toque", "O mesmo louvor pode virar balada, gospel ou groove. Um estilo é feito de ritmo, montagem dos acordes, movimento do baixo e enfeites.")}
   ${STYLE_KEYS.map(k => { const S = STYLES[k]; return `<section class="card stack"><div class="row" style="flex-wrap:nowrap"><span class="spic">${S.ic}</span><div class="grow"><b>${esc(S.n)}</b><p class="small muted">${esc(S.d)}</p></div></div>
     <details class="como"><summary>Como tocar</summary><ul class="small steps">${S.como.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
     <div class="row"><button class="btn pri" data-demo="${k}">${IC.play} Ouvir em I–V–vi–IV</button><button class="btn" data-use="${k}">Usar numa música</button></div></section>`; }).join("")}`;

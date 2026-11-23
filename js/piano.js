@@ -496,7 +496,7 @@ function viewPiano(sub) {
   (R[k] || pianoHub)();
 }
 const PTILES = [
-  ["Praticar", [["tocar", "🎹", "Tocar", "Notas caindo no teclado. A música espera você acertar.", "#FF8A3D", "#FFC145"], ["estilos", "🙌", "Estilos de toque", "Gospel, groove, bossa, baião, balada…", "#E8590C", "#FFA94D"], ["leitura", "𝄞", "Treino de leitura", "Leia a nota na pauta e toque.", "#2B8A3E", "#8CE99A"]]],
+  ["Praticar", [["tocar", "🎹", "Tocar", "Notas caindo no teclado. A música espera você acertar.", "#FF8A3D", "#FFC145"], ["estilos", "🙌", "Estilos de toque", "Balada/louvor, gospel americano e groove.", "#E8590C", "#FFA94D"], ["leitura", "𝄞", "Treino de leitura", "Leia a nota na pauta e toque.", "#2B8A3E", "#8CE99A"]]],
   ["Partituras", [["musicas", "📚", "Minhas músicas", "Biblioteca: tocar ou ver a partitura.", "#6D3FE0", "#B794FF"], ["youtube", "▶", "Do YouTube", "Cole o link: identifica a música e tira a partitura.", "#E03131", "#FF8787"], ["arquivo", "⬆", "Subir áudio ou vídeo", "A IA escreve a partitura com cifras.", "#1C7ED6", "#74C0FC"], ["gravar", "🎤", "Gravar", "Cante ou toque perto do celular.", "#C2255C", "#F783AC"]]],
   ["Configurar", [["teclado", "🔌", "Meu teclado", "Conectar teclado USB ou microfone.", "#495057", "#ADB5BD"]]]
 ];

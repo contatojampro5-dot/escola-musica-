@@ -35,6 +35,7 @@ em GitHub: explicar passo a passo. Theo gosta de autonomia: se ele não responde
   `colorChord`, montagem `voiceNear`, padrão rítmico por estilo; gospel com walk-up cromático e deslize de meio tom). Tela `#piano-estilos`,
   escolha na tela Tocar (`PZ.style`), progressão de demonstração `DEMO`.
   v3.1: notas têm `v` (força), `sd` (quanto soa/pedal), `sw` (balanço) e `j` (micro-atraso), usados no `pzTick`;
+  v3.2: só `STYLE_KEYS` = balada, gospel, groove aparecem (Theo pediu foco nesses); gospel faz I7→IV e IV/V→V.
   antecipação `anticip` (o próximo acorde entra antes), viradas em `phraseEnd`, `rngOf` = aleatório fixo por música.
 - Progresso em localStorage `harpa.v1`. Ao mudar arquivos básicos, subir `VERSAO` no `sw.js` (e listar arquivos novos).
 
